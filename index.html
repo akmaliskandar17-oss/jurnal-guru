@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jurnal Mengajar Guru & Monitoring Kepala Sekolah</title>
     
+    <!-- PWA Manifest Data URI Integration (Mencegah Berkas Eksternal Terpisah) -->
+    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22E-Jurnal%20Terpadu%22%2C%22short_name%22%3A%22E-Jurnal%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%234f46e5%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F192x192%2F4f46e5%2Fffffff%3Ftext%3DJurnal%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fpng%22%7D%2C%7B%22src%22%3A%22https%3A%2F%2Fplacehold.co%2F512x512%2F4f46e5%2Fffffff%3Ftext%3DJurnal%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
     <!-- Google Fonts & Tailwind CSS -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin" />
@@ -15,7 +21,7 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
     
-    <!-- Babel compiler for JSX -->
+    <!-- Babel Compiler for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script>
@@ -88,6 +94,17 @@
             }
         }
         
+        /* Tata Letak Responsif Menggunakan Kunci CSS Modern */
+        @media (max-width: 767px) {
+            .mobile-bottom-nav {
+                position: fixed;
+                bottom: 1rem;
+                left: 1rem;
+                right: 1rem;
+                z-index: 50;
+            }
+        }
+
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -125,11 +142,11 @@
         const IS_PREVIEW = false; 
         const firebaseConfig = {
             apiKey: "AIzaSyAjrv3XgDHtjdXJwDUiXhGtIX4P8EAeR5k",
-  authDomain: "ejurnal-10654.firebaseapp.com",
-  projectId: "ejurnal-10654",
-  storageBucket: "ejurnal-10654.firebasestorage.app",
-  messagingSenderId: "1058944066913",
-  appId: "1:1058944066913:web:64c9c6fa6f813d28f99120"
+            authDomain: "ejurnal-10654.firebaseapp.com",
+            projectId: "ejurnal-10654",
+            storageBucket: "ejurnal-10654.firebasestorage.app",
+            messagingSenderId: "1058944066913",
+            appId: "1:1058944066913:web:64c9c6fa6f813d28f99120"
         };
 
         const safeStorage = {
@@ -425,6 +442,10 @@
             const [loading, setLoading] = useState(true);
             const [firebaseActive, setFirebaseActive] = useState(false);
             const [loggedInUser, setLoggedInUser] = useState(null);
+            
+            // Core States for dynamic meetings grading
+            const [meetings, setMeetings] = useState([]);
+            const [meetingGrades, setMeetingGrades] = useState([]);
 
             const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
             const [alertState, setAlertState] = useState({ isOpen: false, title: '', message: '' });
@@ -445,6 +466,7 @@
                 setAlertState({ isOpen: true, title, message });
             };
 
+            // Restore user session
             useEffect(() => {
                 const savedUser = safeStorage.getItem('jurnal_active_user');
                 if (savedUser) {
@@ -456,6 +478,7 @@
                 }
             }, []);
 
+            // Handle Firebase vs Localstorage
             useEffect(() => {
                 let checkAttempts = 0;
                 const checkFirebaseLib = setInterval(() => {
@@ -498,6 +521,7 @@
                         }
                     });
 
+                    // Sync Student Data
                     const studentsRef = collection(db, "students");
                     onSnapshot(studentsRef, (snapshot) => {
                         if (snapshot.empty) {
@@ -509,6 +533,7 @@
                         }
                     });
 
+                    // Sync KBM Journals
                     const journalsRef = collection(db, "journals");
                     onSnapshot(journalsRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -516,12 +541,14 @@
                         setJournals(data);
                     });
 
+                    // Sync Teacher Logins
                     const gurusRef = collection(db, "gurus");
                     onSnapshot(gurusRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         setGurus(data);
                     });
 
+                    // Sync Class List
                     const classesRef = collection(db, "classes");
                     onSnapshot(classesRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -529,12 +556,27 @@
                         setClasses(data);
                     });
 
+                    // Sync Subjects List
                     const subjectsRef = collection(db, "subjects");
                     onSnapshot(subjectsRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         data.sort((a, b) => a.nama.localeCompare(b.nama));
                         setSubjects(data);
                     });
+
+                    // Sync Dynamic Graded Meetings
+                    const meetingsRef = collection(db, "meetings");
+                    onSnapshot(meetingsRef, (snapshot) => {
+                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setMeetings(data);
+                    }, (err) => console.error("Firebase Sync Error (meetings):", err));
+
+                    // Sync Meeting Grades
+                    const meetingGradesRef = collection(db, "meeting_grades");
+                    onSnapshot(meetingGradesRef, (snapshot) => {
+                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setMeetingGrades(data);
+                    }, (err) => console.error("Firebase Sync Error (meeting_grades):", err));
 
                     setLoading(false);
                 } catch (error) {
@@ -564,6 +606,12 @@
                 if (!safeStorage.getItem('jurnal_subjects')) {
                     safeStorage.setItem('jurnal_subjects', JSON.stringify([{ id: "sub1", nama: "Matematika" }, { id: "sub2", nama: "Fisika" }]));
                 }
+                if (!safeStorage.getItem('jurnal_meetings')) {
+                    safeStorage.setItem('jurnal_meetings', JSON.stringify([]));
+                }
+                if (!safeStorage.getItem('jurnal_meeting_grades')) {
+                    safeStorage.setItem('jurnal_meeting_grades', JSON.stringify([]));
+                }
 
                 const localKop = JSON.parse(safeStorage.getItem('jurnal_kop'));
                 const localStuds = JSON.parse(safeStorage.getItem('jurnal_students'));
@@ -571,6 +619,8 @@
                 const localGurus = JSON.parse(safeStorage.getItem('jurnal_gurus'));
                 const localClasses = JSON.parse(safeStorage.getItem('jurnal_classes'));
                 const localSubjects = JSON.parse(safeStorage.getItem('jurnal_subjects'));
+                const localMeetings = JSON.parse(safeStorage.getItem('jurnal_meetings')) || [];
+                const localMeetingGrades = JSON.parse(safeStorage.getItem('jurnal_meeting_grades')) || [];
 
                 localStuds.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
                 localJourns.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
@@ -583,6 +633,8 @@
                 setGurus(localGurus);
                 setClasses(localClasses);
                 setSubjects(localSubjects);
+                setMeetings(localMeetings);
+                setMeetingGrades(localMeetingGrades);
                 setLoading(false);
             };
 
@@ -868,6 +920,101 @@
                 );
             };
 
+            const addMeeting = async (newMeeting) => {
+                if (firebaseActive) {
+                    const { collection, addDoc } = window.firebaseFirestoreSDK;
+                    await addDoc(collection(window.activeDb, "meetings"), newMeeting);
+                } else {
+                    const updated = [...meetings, { id: 'm_' + Date.now(), ...newMeeting }];
+                    safeStorage.setItem('jurnal_meetings', JSON.stringify(updated));
+                    setMeetings(updated);
+                }
+            };
+
+            const deleteMeeting = async (meetingId) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc, collection, query, where, getDocs } = window.firebaseFirestoreSDK;
+                    const db = window.activeDb;
+                    await deleteDoc(doc(db, "meetings", meetingId));
+                    try {
+                        const gradesQ = query(collection(db, "meeting_grades"), where("meetingId", "==", meetingId));
+                        const snapshot = await getDocs(gradesQ);
+                        for (const docSnap of snapshot.docs) {
+                            await deleteDoc(doc(db, "meeting_grades", docSnap.id));
+                        }
+                    } catch (e) {
+                        console.error("Gagal membersihkan database nilai pertemuan:", e);
+                    }
+                } else {
+                    const updatedMeetings = meetings.filter(m => m.id !== meetingId);
+                    const updatedGrades = meetingGrades.filter(g => g.meetingId !== meetingId);
+                    safeStorage.setItem('jurnal_meetings', JSON.stringify(updatedMeetings));
+                    safeStorage.setItem('jurnal_meeting_grades', JSON.stringify(updatedGrades));
+                    setMeetings(updatedMeetings);
+                    setMeetingGrades(updatedGrades);
+                }
+            };
+
+            const saveMeetingGrade = async (studentId, meetingId, nilai) => {
+                const payload = {
+                    studentId,
+                    meetingId,
+                    nilai: nilai !== null ? Number(nilai) : null
+                };
+
+                const existing = meetingGrades.find(g => g.studentId === studentId && g.meetingId === meetingId);
+
+                if (firebaseActive) {
+                    const { collection, doc, addDoc, updateDoc } = window.firebaseFirestoreSDK;
+                    const db = window.activeDb;
+                    if (existing) {
+                        await updateDoc(doc(db, "meeting_grades", existing.id), { nilai });
+                    } else {
+                        await addDoc(collection(db, "meeting_grades"), payload);
+                    }
+                } else {
+                    let updated;
+                    if (existing) {
+                        updated = meetingGrades.map(g => g.id === existing.id ? { ...g, nilai } : g);
+                    } else {
+                        updated = [...meetingGrades, { id: 'mg_' + Date.now(), ...payload }];
+                    }
+                    safeStorage.setItem('jurnal_meeting_grades', JSON.stringify(updated));
+                    setMeetingGrades(updated);
+                }
+            };
+
+            const deleteMeetingGradesSingle = async (studentId, meetingIds) => {
+                const targetGrades = meetingGrades.filter(g => g.studentId === studentId && meetingIds.includes(g.meetingId));
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    const db = window.activeDb;
+                    for (const g of targetGrades) {
+                        await deleteDoc(doc(db, "meeting_grades", g.id));
+                    }
+                } else {
+                    const idsToRemove = targetGrades.map(g => g.id);
+                    const updated = meetingGrades.filter(g => !idsToRemove.includes(g.id));
+                    safeStorage.setItem('jurnal_meeting_grades', JSON.stringify(updated));
+                    setMeetingGrades(updated);
+                }
+            };
+
+            const deleteMeetingGradesBulk = async (gradesList) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    const db = window.activeDb;
+                    for (const g of gradesList) {
+                        await deleteDoc(doc(db, "meeting_grades", g.id));
+                    }
+                } else {
+                    const idsToRemove = gradesList.map(g => g.id);
+                    const updated = meetingGrades.filter(g => !idsToRemove.includes(g.id));
+                    safeStorage.setItem('jurnal_meeting_grades', JSON.stringify(updated));
+                    setMeetingGrades(updated);
+                }
+            };
+
             if (loading) {
                 return (
                     <div className="flex flex-col h-screen items-center justify-center bg-slate-900 text-white space-y-4">
@@ -902,7 +1049,7 @@
                         onClose={() => setAlertState({ isOpen: false, title: '', message: '' })}
                     />
 
-                    {/* Left Sidebar Menu for Desktop */}
+                    {/* Fixed Sidebar for Desktop View */}
                     <aside className="hidden md:flex w-72 bg-slate-900 text-white flex-col shadow-2xl print-hidden flex-shrink-0 z-30">
                         <div className="p-8 border-b border-indigo-950 flex items-center space-x-3">
                             <div className="p-2.5 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-600/30">
@@ -945,7 +1092,8 @@
                                     <MenuButton icon={<IconUsers />} label="Data Siswa" isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
                                     <MenuButton icon={<IconBook />} label="Isi Jurnal &amp; Absen" isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
                                     <MenuButton icon={<IconHistory />} label="Riwayat Jurnal" isActive={currentView === 'riwayat'} onClick={() => setCurrentView('riwayat')} />
-                                    <MenuButton icon={<IconChart />} label="Rekap" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
+                                    <MenuButton icon={<IconChart />} label="Penilaian Siswa" isActive={currentView === 'penilaian'} onClick={() => setCurrentView('penilaian')} />
+                                    <MenuButton icon={<IconChart />} label="Rekap Laporan" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
                                 </>
                             )}
                         </nav>
@@ -970,7 +1118,7 @@
                         </div>
                     </aside>
 
-                    {/* Bottom Floating Navigation for Mobile */}
+                    {/* Bottom Floating Navigation for Mobile Touch Viewports */}
                     <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-around shadow-2xl print-hidden z-40 border border-white/10">
                         {isAdmin ? (
                             <>
@@ -992,6 +1140,7 @@
                                 <MobileTabButton icon={<IconUsers />} isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
                                 <MobileTabButton icon={<IconBook />} isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
                                 <MobileTabButton icon={<IconHistory />} isActive={currentView === 'riwayat'} onClick={() => setCurrentView('riwayat')} />
+                                <MobileTabButton icon={<IconChart />} isActive={currentView === 'penilaian'} onClick={() => setCurrentView('penilaian')} />
                                 <MobileTabButton icon={<IconChart />} isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
                             </>
                         )}
@@ -1000,7 +1149,7 @@
                         </button>
                     </nav>
 
-                    {/* Main Content Area */}
+                    {/* Main Scrollable Dashboard Content */}
                     <main className="flex-1 flex flex-col h-screen overflow-y-auto print-block relative bg-slate-50">
                         <header className="bg-white/85 backdrop-blur-md shadow-sm border-b border-slate-100 px-8 py-5 flex items-center justify-between print-hidden sticky top-0 z-20">
                             <h2 className="text-xl font-bold text-slate-800 capitalize tracking-tight flex items-center space-x-2">
@@ -1035,6 +1184,7 @@
                                     {currentView === 'siswa' && <ViewDataSiswa students={students} classes={classes} addStudent={addStudent} updateStudent={updateStudent} addStudentsBulk={addStudentsBulk} deleteStudent={deleteStudent} deleteStudentsBulk={deleteStudentsBulk} triggerAlert={triggerAlert} triggerConfirm={triggerConfirm} />}
                                     {currentView === 'isi_jurnal' && <ViewIsiJurnal students={students} classes={classes} subjects={subjects} addJournal={addJournal} onSuccess={() => setCurrentView('riwayat')} triggerAlert={triggerAlert} />}
                                     {currentView === 'riwayat' && <ViewRiwayat journals={journals} deleteJournal={deleteJournal} kop={kop} />}
+                                    {currentView === 'penilaian' && <ViewPenilaian students={students} classes={classes} subjects={subjects} loggedInUser={loggedInUser} kop={kop} triggerAlert={triggerAlert} triggerConfirm={triggerConfirm} firebaseActive={firebaseActive} meetings={meetings} meetingGrades={meetingGrades} addMeeting={addMeeting} deleteMeeting={deleteMeeting} saveMeetingGrade={saveMeetingGrade} deleteMeetingGradesSingle={deleteMeetingGradesSingle} deleteMeetingGradesBulk={deleteMeetingGradesBulk} />}
                                     {currentView === 'rekap' && <ViewRekap journals={journals} students={students} loggedInUser={loggedInUser} kop={kop} />}
                                 </>
                             )}
@@ -1388,7 +1538,7 @@
 
             const handleSave = async (e) => {
                 e.preventDefault();
-                isSaving(true);
+                setIsSaving(true);
                 try {
                     await updateKop({ instansi, sekolah, alamat });
                     triggerAlert("Kop Cetak Diperbarui", "Desain Kop Surat resmi berhasil disimpan!");
@@ -2416,7 +2566,6 @@
                         <h2 className="text-lg font-black uppercase text-slate-900 mt-1">{kop?.sekolah || "SMK NEGERI 3 SELAYAR"}</h2>
                         <p className="text-xs text-slate-500 mt-1">Alamat: {kop?.alamat}</p>
                         <div className="w-full h-1 bg-slate-900 mt-3"></div>
-                        {/* Generous Print Spacer between Kop and subsequent data as requested */}
                         <div className="print:h-16 hidden print:block"></div>
                     </div>
 
@@ -2466,12 +2615,11 @@
 
                         {journal.fotoUrl && (
                             <div className="mb-12 print-break-inside-avoid">
-                                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1 print-border-slate-800">Dokumentasi Foto KBM</h3>
+                                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1 print:border-slate-800">Dokumentasi Foto KBM</h3>
                                 <img src={journal.fotoUrl} alt="Dokumentasi KBM" className="max-w-lg w-full h-auto rounded-2xl border border-slate-100 shadow-md print-border-slate-800" />
                             </div>
                         )}
 
-                        {/* Print Layout Signature Section: Positioned to the right, teacher signature and "menyatakan sebenarnya" completely removed, headmaster name on single line (w-80) as requested */}
                         <div className="hidden print:flex justify-end mt-16 pt-8 border-t border-slate-100">
                             <div className="text-center w-80">
                                 <p className="text-xs text-slate-500">Mengetahui,</p>
@@ -2568,14 +2716,13 @@
                     </div>
 
                     <div className="p-6 md:p-8 print:p-0">
-                        {/* Print Kop Header inside view rekap */}
+                        {/* Print Kop Header */}
                         <div className="hidden print-block text-center border-b-2 border-slate-900 pb-5 mb-8">
                             <h1 className="text-xl font-bold uppercase text-slate-900 leading-tight">{kop?.instansi || "PEMERINTAH PROVINSI SULAWESI SELATAN"}</h1>
                             <h2 className="text-lg font-black uppercase text-slate-900 mt-1">{kop?.sekolah || "SMK NEGERI 3 SELAYAR"}</h2>
                             <p className="text-xs text-slate-500 mt-1">Laporan Rekapitulasi {activeTab === 'kehadiran' ? 'Kehadiran Siswa' : 'Kegiatan Belajar Mengajar'}</p>
                             <p className="text-[11px] text-slate-800 mt-1 font-semibold">Kelas: {filterKelas} | Bulan: {filterBulan} | Alamat: {kop?.alamat}</p>
                             <div className="w-full h-1 bg-slate-900 mt-3"></div>
-                            {/* Generous Print Spacer between Kop and subsequent data as requested */}
                             <div className="print:h-16 hidden print:block"></div>
                         </div>
 
@@ -2678,7 +2825,6 @@
                             </div>
                         )}
                         
-                        {/* Print Layout Signature Section: Positioned to the right, teacher signature and "menyatakan sebenarnya" completely removed, headmaster name on single line (w-80) as requested */}
                         <div className="hidden print:flex justify-end mt-16 pt-8">
                             <div className="text-center w-80">
                                 <p className="text-xs text-slate-500">Mengetahui,</p>
@@ -2688,14 +2834,669 @@
                                 <p className="text-[10px] text-slate-400 mt-1 font-mono">NIP. 19700101</p>
                             </div>
                         </div>
-
                     </div>
+                </div>
+            );
+        };
+
+        const GradeInput = ({ studentId, meetingId, initialValue, onSave }) => {
+            const [val, setVal] = useState(initialValue !== null && initialValue !== undefined ? initialValue : '');
+            
+            useEffect(() => {
+                setVal(initialValue !== null && initialValue !== undefined ? initialValue : '');
+            }, [initialValue]);
+
+            const handleBlur = () => {
+                const numericOriginal = initialValue !== null && initialValue !== undefined ? String(initialValue) : '';
+                if (val !== numericOriginal) {
+                    onSave(studentId, meetingId, val === '' ? null : Number(val));
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur();
+                }
+            };
+
+            return (
+                <input 
+                    type="number"
+                    min="0"
+                    max="100"
+                    placeholder="-"
+                    value={val}
+                    onChange={e => setVal(e.target.value)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
+                    className="w-16 p-1.5 border border-slate-200 rounded-lg text-center font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-sans"
+                />
+            );
+        };
+
+        const ViewPenilaian = ({ 
+            students, 
+            classes, 
+            subjects, 
+            loggedInUser, 
+            kop, 
+            triggerAlert, 
+            triggerConfirm, 
+            firebaseActive,
+            meetings,
+            meetingGrades,
+            addMeeting,
+            deleteMeeting,
+            saveMeetingGrade,
+            deleteMeetingGradesSingle,
+            deleteMeetingGradesBulk
+        }) => {
+            const [filterKelas, setFilterKelas] = useState('');
+            const [filterMapel, setFilterMapel] = useState('');
+            const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+            const [editingStudent, setEditingStudent] = useState(null);
+            
+            // Sub tab state: 'rekap' | 'harian' | 'tugas' | 'ulangan'
+            const [activeSubTab, setActiveSubTab] = useState('rekap');
+            const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+            const [newMeetingName, setNewMeetingName] = useState('');
+            const [editingGrades, setEditingGrades] = useState({});
+
+            const availableClasses = useMemo(() => {
+                return [...new Set(students.map(s => s.kelas))].sort();
+            }, [students]);
+
+            const availableSubjects = useMemo(() => {
+                return subjects.map(s => s.nama).sort();
+            }, [subjects]);
+
+            // Set default class & subject
+            useEffect(() => {
+                if (availableClasses.length > 0 && !filterKelas) {
+                    setFilterKelas(availableClasses[0]);
+                }
+                if (availableSubjects.length > 0 && !filterMapel) {
+                    const matchedSub = availableSubjects.find(s => s.toLowerCase() === (loggedInUser.mapel || '').toLowerCase());
+                    setFilterMapel(matchedSub || availableSubjects[0]);
+                }
+            }, [availableClasses, availableSubjects]);
+
+            const studentsInClass = useMemo(() => {
+                return students.filter(s => s.kelas === filterKelas);
+            }, [students, filterKelas]);
+
+            // Filter meetings under selected filter criteria
+            const currentMeetings = useMemo(() => {
+                return (meetings || []).filter(m => m.kelas === filterKelas && m.mapel === filterMapel);
+            }, [meetings, filterKelas, filterMapel]);
+
+            const harianMeetings = useMemo(() => currentMeetings.filter(m => m.tipe === 'harian'), [currentMeetings]);
+            const tugasMeetings = useMemo(() => currentMeetings.filter(m => m.tipe === 'tugas'), [currentMeetings]);
+            const ulanganMeetings = useMemo(() => currentMeetings.filter(m => m.tipe === 'ulangan'), [currentMeetings]);
+
+            const selectedTypeMeetings = useMemo(() => {
+                if (activeSubTab === 'harian') return harianMeetings;
+                if (activeSubTab === 'tugas') return tugasMeetings;
+                if (activeSubTab === 'ulangan') return ulanganMeetings;
+                return [];
+            }, [activeSubTab, harianMeetings, tugasMeetings, ulanganMeetings]);
+
+            // Calculate student grades combined list dynamically based on meeting grades
+            const combinedData = useMemo(() => {
+                return studentsInClass.map(s => {
+                    const studentHarianVals = harianMeetings.map(m => {
+                        const g = (meetingGrades || []).find(grade => grade.studentId === s.id && grade.meetingId === m.id);
+                        return g && g.nilai !== null && g.nilai !== undefined ? g.nilai : null;
+                    }).filter(v => v !== null);
+                    const harian = studentHarianVals.length > 0
+                        ? Math.round(studentHarianVals.reduce((a, b) => a + b, 0) / studentHarianVals.length)
+                        : null;
+
+                    const studentTugasVals = tugasMeetings.map(m => {
+                        const g = (meetingGrades || []).find(grade => grade.studentId === s.id && grade.meetingId === m.id);
+                        return g && g.nilai !== null && g.nilai !== undefined ? g.nilai : null;
+                    }).filter(v => v !== null);
+                    const tugas = studentTugasVals.length > 0
+                        ? Math.round(studentTugasVals.reduce((a, b) => a + b, 0) / studentTugasVals.length)
+                        : null;
+
+                    const studentUlanganVals = ulanganMeetings.map(m => {
+                        const g = (meetingGrades || []).find(grade => grade.studentId === s.id && grade.meetingId === m.id);
+                        return g && g.nilai !== null && g.nilai !== undefined ? g.nilai : null;
+                    }).filter(v => v !== null);
+                    const ulangan = studentUlanganVals.length > 0
+                        ? Math.round(studentUlanganVals.reduce((a, b) => a + b, 0) / studentUlanganVals.length)
+                        : null;
+
+                    let average = null;
+                    let count = 0;
+                    if (harian !== null) count++;
+                    if (tugas !== null) count++;
+                    if (ulangan !== null) count++;
+                    if (count > 0) {
+                        average = Math.round(((harian || 0) + (tugas || 0) + (ulangan || 0)) / count);
+                    }
+
+                    return {
+                        ...s,
+                        harian,
+                        tugas,
+                        ulangan,
+                        average
+                    };
+                });
+            }, [studentsInClass, harianMeetings, tugasMeetings, ulanganMeetings, meetingGrades]);
+
+            const handleSelectAll = () => {
+                const classStudentIds = combinedData.map(s => s.id);
+                const allSelected = classStudentIds.every(id => selectedStudentIds.includes(id));
+                if (allSelected) {
+                    setSelectedStudentIds(prev => prev.filter(id => !classStudentIds.includes(id)));
+                } else {
+                    setSelectedStudentIds(prev => [...new Set([...prev, ...classStudentIds])]);
+                }
+            };
+
+            const handleSelectStudent = (id) => {
+                setSelectedStudentIds(prev => 
+                    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+                );
+            };
+
+            const handleEditClick = (student) => {
+                setEditingStudent(student);
+                const initial = {};
+                currentMeetings.forEach(m => {
+                    const g = (meetingGrades || []).find(grade => grade.studentId === student.id && grade.meetingId === m.id);
+                    initial[m.id] = g && g.nilai !== null && g.nilai !== undefined ? g.nilai : '';
+                });
+                setEditingGrades(initial);
+            };
+
+            const handleSaveGradesModal = async (e) => {
+                e.preventDefault();
+                if (!editingStudent) return;
+
+                try {
+                    for (const m of currentMeetings) {
+                        const val = editingGrades[m.id];
+                        const numericVal = val === '' ? null : Number(val);
+                        await saveMeetingGrade(editingStudent.id, m.id, numericVal);
+                    }
+                    setEditingStudent(null);
+                    triggerAlert("Berhasil", `Seluruh nilai untuk siswa ${editingStudent.nama} berhasil diperbarui!`);
+                } catch (error) {
+                    console.error("Gagal menyimpan nilai:", error);
+                    triggerAlert("Error", "Gagal menyimpan data nilai.");
+                }
+            };
+
+            const handleDeleteSingle = (student) => {
+                const targetMeetingIds = currentMeetings.map(m => m.id);
+                if (targetMeetingIds.length === 0) return;
+                triggerConfirm(
+                    "Hapus Nilai Siswa",
+                    `Apakah Anda yakin ingin mengosongkan seluruh nilai untuk ${student.nama} pada mata pelajaran ${filterMapel}?`,
+                    async () => {
+                        try {
+                            await deleteMeetingGradesSingle(student.id, targetMeetingIds);
+                            triggerAlert("Sukses", "Nilai siswa berhasil dikosongkan.");
+                        } catch (error) {
+                            console.error("Gagal menghapus nilai:", error);
+                        }
+                    }
+                );
+            };
+
+            const handleDeleteBulk = () => {
+                if (selectedStudentIds.length === 0) return;
+                const targetMeetingIds = currentMeetings.map(m => m.id);
+                triggerConfirm(
+                    "Hapus Nilai Terpilih",
+                    `Apakah Anda yakin ingin menghapus nilai dari ${selectedStudentIds.length} siswa terpilih secara massal?`,
+                    async () => {
+                        try {
+                            const existingToClear = (meetingGrades || []).filter(g => selectedStudentIds.includes(g.studentId) && targetMeetingIds.includes(g.meetingId));
+                            if (existingToClear.length > 0) {
+                                await deleteMeetingGradesBulk(existingToClear);
+                            }
+                            setSelectedStudentIds([]);
+                            triggerAlert("Sukses", "Nilai siswa terpilih berhasil dikosongkan massal.");
+                        } catch (error) {
+                            console.error("Gagal hapus massal:", error);
+                        }
+                    }
+                );
+            };
+
+            const handleTambahPertemuan = () => {
+                const count = selectedTypeMeetings.length + 1;
+                const defaultName = `${activeSubTab === 'harian' ? 'Pertemuan' : activeSubTab === 'tugas' ? 'Tugas' : 'UH'} ${count}`;
+                setNewMeetingName(defaultName);
+                setIsMeetingModalOpen(true);
+            };
+
+            const onSaveNewMeeting = async (e) => {
+                e.preventDefault();
+                if (!newMeetingName.trim()) return;
+                const newMeeting = {
+                    nama: newMeetingName.trim(),
+                    kelas: filterKelas,
+                    mapel: filterMapel,
+                    tipe: activeSubTab
+                };
+                await addMeeting(newMeeting);
+                setIsMeetingModalOpen(false);
+                setNewMeetingName('');
+                triggerAlert("Berhasil", "Pertemuan baru berhasil ditambahkan!");
+            };
+
+            const handleHapusPertemuan = (meetingId, meetingName) => {
+                triggerConfirm(
+                    "Hapus Pertemuan",
+                    `Apakah Anda yakin ingin menghapus "${meetingName}" beserta seluruh nilai siswa di dalamnya?`,
+                    async () => {
+                        await deleteMeeting(meetingId);
+                        triggerAlert("Sukses", `Pertemuan "${meetingName}" berhasil dihapus.`);
+                    }
+                );
+            };
+
+            const stats = useMemo(() => {
+                const validAverages = combinedData.map(d => d.average).filter(v => v !== null);
+                if (validAverages.length === 0) return { avg: 0, high: 0, low: 0 };
+                return {
+                    avg: Math.round(validAverages.reduce((a, b) => a + b, 0) / validAverages.length),
+                    high: Math.max(...validAverages),
+                    low: Math.min(...validAverages)
+                };
+            }, [combinedData]);
+
+            const realtimeDateStr = useMemo(() => {
+                return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            }, []);
+
+            return (
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-block animate-in fade-in duration-200">
+                    {/* Top filter toolbar panel */}
+                    <div className="print-hidden border-b border-slate-100 flex flex-wrap bg-slate-50/50 justify-between items-center px-6 py-4 gap-4">
+                        <div className="flex items-center space-x-3">
+                            <span className="text-sm font-bold text-slate-700">Daftar Nilai Kelas</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <select value={filterKelas} onChange={e => { setFilterKelas(e.target.value); setSelectedStudentIds([]); }} className="p-2.5 text-xs border border-slate-200 rounded-xl font-semibold outline-none bg-white font-sans">
+                                <option value="">-- Pilih Kelas --</option>
+                                {availableClasses.map(k => <option key={k} value={k}>Kelas: {k}</option>)}
+                            </select>
+                            <select value={filterMapel} onChange={e => { setFilterMapel(e.target.value); setSelectedStudentIds([]); }} className="p-2.5 text-xs border border-slate-200 rounded-xl font-semibold outline-none bg-white font-sans">
+                                <option value="">-- Pilih Mapel --</option>
+                                {availableSubjects.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                            <button onClick={() => window.print()} disabled={!filterKelas || !filterMapel} className="px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold text-xs transition flex items-center space-x-1.5 disabled:opacity-50">
+                                <IconPrint /> <span>Cetak Nilai</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Sub tabs navigation inside ViewPenilaian panel */}
+                    <div className="flex border-b border-slate-100 mb-6 px-6 pt-4 print-hidden bg-white">
+                        <button onClick={() => setActiveSubTab('rekap')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'rekap' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Rata-Rata &amp; Rekap</button>
+                        <button onClick={() => setActiveSubTab('harian')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'harian' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Harian per Pertemuan</button>
+                        <button onClick={() => setActiveSubTab('tugas')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'tugas' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Tugas per Pertemuan</button>
+                        <button onClick={() => setActiveSubTab('ulangan')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'ulangan' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Ulangan Harian</button>
+                    </div>
+
+                    {filterKelas && filterMapel && activeSubTab === 'rekap' && (
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 bg-slate-50/40 border-b border-slate-100 print-hidden">
+                            <div className="bg-indigo-50/50 border border-indigo-100/50 p-4 rounded-2xl flex flex-col">
+                                <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Rata-Rata Kelas</span>
+                                <span className="text-2xl font-black text-indigo-700 mt-1">{stats.avg || '-'}</span>
+                            </div>
+                            <div className="bg-emerald-50/50 border border-emerald-100/50 p-4 rounded-2xl flex flex-col">
+                                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Nilai Tertinggi</span>
+                                <span className="text-2xl font-black text-emerald-700 mt-1">{stats.high || '-'}</span>
+                            </div>
+                            <div className="bg-rose-50/50 border border-rose-100/50 p-4 rounded-2xl flex flex-col">
+                                <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Nilai Terendah</span>
+                                <span className="text-2xl font-black text-rose-700 mt-1">{stats.low || '-'}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="p-6 md:p-8 print:p-0">
+                        {/* Printable Kop Header */}
+                        <div className="hidden print-block text-center border-b-2 border-slate-900 pb-5 mb-8">
+                            <h1 className="text-xl font-bold uppercase text-slate-900 leading-tight">{kop?.instansi || "PEMERINTAH PROVINSI SULAWESI SELATAN"}</h1>
+                            <h2 className="text-lg font-black uppercase text-slate-900 mt-1">{kop?.sekolah || "SMK NEGERI 3 SELAYAR"}</h2>
+                            <p className="text-xs text-slate-500 mt-1">Laporan Rekapitulasi Nilai Rata-Rata Siswa</p>
+                            <p className="text-[11px] text-slate-800 mt-1 font-semibold">Kelas: {filterKelas} | Mata Pelajaran: {filterMapel} | Wali Kelas/Guru Pengajar: {loggedInUser.nama}</p>
+                            <div className="w-full h-1 bg-slate-900 mt-3"></div>
+                            <div className="print:h-16 hidden print:block"></div>
+                        </div>
+
+                        {selectedStudentIds.length > 0 && activeSubTab === 'rekap' && (
+                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between mb-4 animate-in fade-in slide-in-from-top-4 duration-150 print-hidden">
+                                <span className="text-xs font-bold text-indigo-800">
+                                    {selectedStudentIds.length} Nilai Siswa Terpilih
+                                </span>
+                                <button 
+                                    onClick={handleDeleteBulk}
+                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-rose-600/15"
+                                >
+                                    Kosongkan Nilai Terpilih
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Heading & Toolbar for Dynamic Sub-tabs with meeting manager buttons */}
+                        {filterKelas && filterMapel && activeSubTab !== 'rekap' && (
+                            <div className="flex justify-between items-center mb-4 print-hidden">
+                                <div className="flex items-center space-x-2">
+                                    <h4 className="text-sm font-bold text-slate-700 uppercase">
+                                        Data {activeSubTab === 'harian' ? 'Nilai Harian' : activeSubTab === 'tugas' ? 'Nilai Tugas' : 'Ulangan Harian'} ({selectedTypeMeetings.length} Pertemuan)
+                                    </h4>
+                                </div>
+                                <button 
+                                    type="button"
+                                    onClick={handleTambahPertemuan}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1"
+                                >
+                                    <span>+ Tambah Pertemuan</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {filterKelas && filterMapel ? (
+                            activeSubTab === 'rekap' ? (
+                                <div className="overflow-x-auto print:overflow-visible animate-in fade-in duration-200">
+                                    <table className="w-full text-xs border-collapse border border-slate-300">
+                                        <thead>
+                                            <tr className="bg-slate-100 text-slate-800 font-semibold">
+                                                <th className="border border-slate-300 p-3 text-center w-12 print-hidden">
+                                                    <input 
+                                                        type="checkbox"
+                                                        checked={combinedData.length > 0 && combinedData.every(s => selectedStudentIds.includes(s.id))}
+                                                        onChange={handleSelectAll}
+                                                        className="w-4 h-4 cursor-pointer accent-indigo-600"
+                                                    />
+                                                </th>
+                                                <th className="border border-slate-300 p-3 text-center w-10">No</th>
+                                                <th className="border border-slate-300 p-3 text-left w-32">NIS</th>
+                                                <th className="border border-slate-300 p-3 text-left">Nama Lengkap Siswa</th>
+                                                <th className="border border-slate-300 p-3 text-center w-24">Rata Harian</th>
+                                                <th className="border border-slate-300 p-3 text-center w-24">Rata Tugas</th>
+                                                <th className="border border-slate-300 p-3 text-center w-24">Rata Ulangan</th>
+                                                <th className="border border-slate-300 p-3 text-center w-24 font-bold bg-indigo-50/50 text-indigo-900">Rata-Rata Akhir</th>
+                                                <th className="border border-slate-300 p-3 text-center w-36 print-hidden">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {combinedData.map((student, idx) => (
+                                                <tr key={student.id} className="hover:bg-slate-50/50 print-break-inside-avoid">
+                                                    <td className="border border-slate-300 p-3 text-center print-hidden">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={selectedStudentIds.includes(student.id)}
+                                                            onChange={() => handleSelectStudent(student.id)}
+                                                            className="w-4 h-4 cursor-pointer accent-indigo-600"
+                                                        />
+                                                    </td>
+                                                    <td className="border border-slate-300 p-3 text-center">{idx + 1}</td>
+                                                    <td className="border border-slate-300 p-3 font-mono">{student.nis}</td>
+                                                    <td className="border border-slate-300 p-3 font-semibold text-slate-800">{student.nama}</td>
+                                                    <td className="border border-slate-300 p-3 text-center font-bold text-slate-700">{student.harian !== null ? student.harian : '-'}</td>
+                                                    <td className="border border-slate-300 p-3 text-center font-bold text-slate-700">{student.tugas !== null ? student.tugas : '-'}</td>
+                                                    <td className="border border-slate-300 p-3 text-center font-bold text-slate-700">{student.ulangan !== null ? student.ulangan : '-'}</td>
+                                                    <td className="border border-slate-300 p-3 text-center font-extrabold bg-indigo-50/30 text-indigo-600">{student.average !== null ? student.average : '-'}</td>
+                                                    <td className="border border-slate-300 p-3 text-center space-x-2 whitespace-nowrap print-hidden font-semibold">
+                                                        <button onClick={() => handleEditClick(student)} className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
+                                                            Ubah Nilai
+                                                        </button>
+                                                        <button onClick={() => handleDeleteSingle(student)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Nilai">
+                                                            <IconTrash />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {combinedData.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="9" className="border border-slate-300 p-12 text-center text-slate-400 bg-slate-50">
+                                                        Belum ada data siswa untuk kelas ini.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                /* Dynamic grid table representing individual meetings */
+                                <div className="overflow-x-auto animate-in fade-in duration-200">
+                                    <table className="w-full text-xs border-collapse border border-slate-300">
+                                        <thead>
+                                            <tr className="bg-slate-100 text-slate-800 font-semibold">
+                                                <th className="border border-slate-300 p-3 text-center w-12">No</th>
+                                                <th className="border border-slate-300 p-3 text-left w-32">NIS</th>
+                                                <th className="border border-slate-300 p-3 text-left">Nama Lengkap Siswa</th>
+                                                {selectedTypeMeetings.map(m => (
+                                                    <th key={m.id} className="border border-slate-300 p-2 text-center relative group min-w-[120px] bg-indigo-50/30">
+                                                        <div className="flex flex-col items-center justify-center">
+                                                            <span className="font-bold text-indigo-950">{m.nama}</span>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleHapusPertemuan(m.id, m.nama)}
+                                                                className="mt-1 text-[9px] text-rose-500 hover:text-rose-700 hover:scale-105 font-bold transition-all duration-150 py-0.5 px-2 bg-rose-50 rounded border border-rose-100"
+                                                            >
+                                                                Hapus Kolom
+                                                            </button>
+                                                        </div>
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {studentsInClass.map((student, idx) => (
+                                                <tr key={student.id} className="hover:bg-slate-50/50 transition">
+                                                    <td className="border border-slate-300 p-3 text-center">{idx + 1}</td>
+                                                    <td className="border border-slate-300 p-3 font-mono">{student.nis}</td>
+                                                    <td className="border border-slate-300 p-3 font-semibold text-slate-800">{student.nama}</td>
+                                                    {selectedTypeMeetings.map(m => {
+                                                        const gradeRecord = (meetingGrades || []).find(g => g.studentId === student.id && g.meetingId === m.id);
+                                                        const gradeValue = gradeRecord ? gradeRecord.nilai : null;
+                                                        return (
+                                                            <td key={m.id} className="border border-slate-300 p-1 text-center">
+                                                                <GradeInput 
+                                                                    studentId={student.id} 
+                                                                    meetingId={m.id} 
+                                                                    initialValue={gradeValue} 
+                                                                    onSave={saveMeetingGrade} 
+                                                                />
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            ))}
+                                            {studentsInClass.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={3 + selectedTypeMeetings.length} className="border border-slate-300 p-12 text-center text-slate-400 bg-slate-50">
+                                                        Belum ada data siswa untuk kelas ini.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )
+                        ) : (
+                            <div className="p-12 text-center text-slate-400 print-hidden bg-slate-50 rounded-2xl border border-dashed">
+                                Hubungkan kelas dan mata pelajaran untuk mengaktifkan lembar penilaian.
+                            </div>
+                        )}
+
+                        <div className="hidden print:flex justify-between mt-16 pt-8">
+                            <div className="text-center w-80">
+                                <p className="text-xs text-slate-500">Mengetahui,</p>
+                                <p className="text-xs font-semibold text-slate-800">Kepala Sekolah</p>
+                                <div className="h-24"></div>
+                                <p className="font-bold text-slate-900 underline whitespace-nowrap">Drs. H. Ahmad Yani, M.Pd.</p>
+                                <p className="text-[10px] text-slate-400 mt-1 font-mono">NIP. 19700101</p>
+                            </div>
+                            <div className="text-center w-80">
+                                <p className="text-xs text-slate-500">Benteng, {realtimeDateStr}</p>
+                                <p className="text-xs font-semibold text-slate-800">Guru Pengajar</p>
+                                <div className="h-24"></div>
+                                <p className="font-bold text-slate-900 underline whitespace-nowrap">{loggedInUser.nama}</p>
+                                <p className="text-[10px] text-slate-400 mt-1 font-mono">NIP. {loggedInUser.nip || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tambah Pertemuan Modal */}
+                    {isMeetingModalOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm print-hidden-important">
+                            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+                                <h4 className="text-lg font-bold text-slate-900 mb-2">Tambah Pertemuan Baru</h4>
+                                <p className="text-slate-500 text-xs mb-4">
+                                    Kategori: <span className="font-bold text-indigo-600 uppercase">{activeSubTab === 'harian' ? 'Nilai Harian' : activeSubTab === 'tugas' ? 'Nilai Tugas' : 'Ulangan Harian'}</span>
+                                </p>
+                                <form onSubmit={onSaveNewMeeting} className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1">Nama Pertemuan / Label</label>
+                                        <input 
+                                            type="text" 
+                                            required 
+                                            placeholder="Contoh: Pertemuan 1" 
+                                            value={newMeetingName} 
+                                            onChange={e => setNewMeetingName(e.target.value)} 
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/25 transition" 
+                                        />
+                                    </div>
+                                    <div className="flex space-x-3 pt-2">
+                                        <button type="button" onClick={() => setIsMeetingModalOpen(false)} className="w-1/2 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition">Batal</button>
+                                        <button type="submit" className="w-1/2 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/20">Simpan</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Form Edit Semua Nilai Modal Overlay */}
+                    {editingStudent && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm print-hidden-important">
+                            <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[85vh] flex flex-col">
+                                <div className="mb-4">
+                                    <h4 className="text-lg font-bold text-slate-900">Ubah Semua Nilai Siswa</h4>
+                                    <p className="text-slate-500 text-xs">Siswa: <span className="font-semibold text-slate-800">{editingStudent.nama}</span> ({editingStudent.nis})</p>
+                                </div>
+                                
+                                <form onSubmit={handleSaveGradesModal} className="space-y-4 overflow-y-auto flex-1 pr-1">
+                                    {harianMeetings.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h5 className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Nilai Harian</h5>
+                                            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                {harianMeetings.map(m => (
+                                                    <div key={m.id} className="flex items-center justify-between">
+                                                        <span className="text-xs font-medium text-slate-600 truncate mr-1">{m.nama}:</span>
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max="100" 
+                                                            placeholder="-" 
+                                                            value={editingGrades[m.id] !== undefined ? editingGrades[m.id] : ''} 
+                                                            onChange={e => setEditingGrades(prev => ({ ...prev, [m.id]: e.target.value }))}
+                                                            className="w-16 bg-white border border-slate-200 rounded-lg p-1.5 text-center text-xs font-bold outline-none" 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {tugasMeetings.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h5 className="text-xs font-extrabold text-sky-600 uppercase tracking-wider">Nilai Tugas</h5>
+                                            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                {tugasMeetings.map(m => (
+                                                    <div key={m.id} className="flex items-center justify-between">
+                                                        <span className="text-xs font-medium text-slate-600 truncate mr-1">{m.nama}:</span>
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max="100" 
+                                                            placeholder="-" 
+                                                            value={editingGrades[m.id] !== undefined ? editingGrades[m.id] : ''} 
+                                                            onChange={e => setEditingGrades(prev => ({ ...prev, [m.id]: e.target.value }))}
+                                                            className="w-16 bg-white border border-slate-200 rounded-lg p-1.5 text-center text-xs font-bold outline-none" 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {ulanganMeetings.length > 0 && (
+                                        <div className="space-y-2">
+                                            <h5 className="text-xs font-extrabold text-rose-600 uppercase tracking-wider">Nilai Ulangan Harian</h5>
+                                            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                {ulanganMeetings.map(m => (
+                                                    <div key={m.id} className="flex items-center justify-between">
+                                                        <span className="text-xs font-medium text-slate-600 truncate mr-1">{m.nama}:</span>
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max="100" 
+                                                            placeholder="-" 
+                                                            value={editingGrades[m.id] !== undefined ? editingGrades[m.id] : ''} 
+                                                            onChange={e => setEditingGrades(prev => ({ ...prev, [m.id]: e.target.value }))}
+                                                            className="w-16 bg-white border border-slate-200 rounded-lg p-1.5 text-center text-xs font-bold outline-none" 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {currentMeetings.length === 0 && (
+                                        <p className="text-xs text-center text-slate-400 py-4">Belum ada pertemuan yang ditambahkan.</p>
+                                    )}
+
+                                    <div className="flex space-x-3 pt-3 border-t border-slate-100">
+                                        <button type="button" onClick={() => setEditingStudent(null)} className="w-1/2 py-2.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 transition">Batal</button>
+                                        <button type="submit" className="w-1/2 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition shadow-lg shadow-indigo-600/20">Simpan Nilai</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = `
+                    const CACHE_NAME = "ejurnal-pwa-v1";
+                    const assets = [
+                        "/",
+                        "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap",
+                        "https://cdn.tailwindcss.com"
+                    ];
+                    self.addEventListener("install", e => {
+                        e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(assets)));
+                    });
+                    self.addEventListener("fetch", e => {
+                        e.respondWith(caches.match(e.request).then(res => res || fetch(e.request)));
+                    });
+                `;
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swUrl = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(swUrl)
+                    .then(() => console.log('Dynamic SW Registered!'))
+                    .catch(err => console.log('SW Registration Failed', err));
+            });
+        }
     </script>
 </body>
 </html>
