@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurnal Mengajar Guru Terpadu</title>
+    
+    <!-- Google Fonts & Tailwind CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel compiler for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Configure Tailwind Font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Styles for perfect print layout */
+        @media print {
+            @page { 
+                margin: 1.6cm 1.2cm; 
+                size: A4 portrait; 
+            }
+            body { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background-color: white !important; 
+                font-size: 11px !important;
+            }
+            .print-hidden { 
+                display: none !important; 
+            }
+            .print-block { 
+                display: block !important; 
+                width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .print-break-inside-avoid { 
+                break-inside: avoid; 
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+        
+        /* Glassmorphic scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen font-sans">
+    
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Expose to window so our React application can reach them safely
+        window.firebaseCore = { initializeApp };
+        window.firebaseAuthSDK = { getAuth, signInAnonymously };
+        window.firebaseFirestoreSDK = { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc };
+        window.firebaseInitialized = true;
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- DEPLOYMENT SWITCH & CONFIGURATION ---
+        const IS_PREVIEW = false; // Set to FALSE if you have fully configured Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjrv3XgDHtjdXJwDUiXhGtIX4P8EAeR5k",
+  authDomain: "ejurnal-10654.firebaseapp.com",
+  projectId: "ejurnal-10654",
+  storageBucket: "ejurnal-10654.firebasestorage.app",
+  messagingSenderId: "1058944066913",
+  appId: "1:1058944066913:web:64c9c6fa6f813d28f99120"
+        };
+
+        // --- INITIAL MOCK / DUMMY DATA FOR AUTO-SETUP ---
+        const DUMMY_STUDENTS = [
+            { id: "s1", nis: "24001", nama: "Aditya Pratama", kelas: "XI-A" },
+            { id: "s2", nis: "24002", nama: "Amanda Putri", kelas: "XI-A" },
+            { id: "s3", nis: "24003", nama: "Budi Setiawan", kelas: "XI-A" },
+            { id: "s4", nis: "24004", nama: "Citra Rahayu", kelas: "XI-A" },
+            { id: "s5", nis: "24005", nama: "Daniel Wijaya", kelas: "XI-A" },
+            { id: "s6", nis: "24006", nama: "Eka Saputra", kelas: "XI-B" },
+            { id: "s7", nis: "24007", nama: "Fitri Handayani", kelas: "XI-B" },
+            { id: "s8", nis: "24008", nama: "Gilang Ramadhan", kelas: "XI-B" },
+            { id: "s9", nis: "24009", nama: "Hana Lestari", kelas: "XI-B" },
+            { id: "s10", nis: "24010", nama: "Indra Kusuma", kelas: "XI-B" },
+        ];
+
+        const getPastDateStr = (daysAgo) => {
+            const d = new Date();
+            d.setDate(d.getDate() - daysAgo);
+            return d.toISOString().split('T')[0];
+        };
+
+        const DUMMY_JOURNALS = [
+            {
+                id: "j1",
+                tanggal: getPastDateStr(4),
+                kelas: "XI-A",
+                mapel: "Matematika",
+                materi: "Matriks & Operasi Elementer",
+                catatan: "Siswa memahami perkalian matriks dengan sangat baik. Latihan soal halaman 45 diselesaikan tepat waktu.",
+                fotoUrl: "https://placehold.co/800x450/4f46e5/ffffff?text=KBM+Matematika+XI-A",
+                waktu_input: new Date(Date.now() - 4 * 86400000).toISOString(),
+                absensi_data: { "s1": "H", "s2": "H", "s3": "S", "s4": "H", "s5": "I" },
+                rekap: { hadir: 3, sakit: 1, izin: 1, alpa: 0 }
+            },
+            {
+                id: "j2",
+                tanggal: getPastDateStr(2),
+                kelas: "XI-B",
+                mapel: "Fisika",
+                materi: "Hukum Termodinamika II",
+                catatan: "Beberapa anak masih bingung mengenai diagram efisiensi mesin Carnot. Perlu penguatan materi minggu depan.",
+                fotoUrl: "https://placehold.co/800x450/0ea5e9/ffffff?text=KBM+Fisika+XI-B",
+                waktu_input: new Date(Date.now() - 2 * 86400000).toISOString(),
+                absensi_data: { "s6": "H", "s7": "A", "s8": "H", "s9": "H", "s10": "H" },
+                rekap: { hadir: 4, sakit: 0, izin: 0, alpa: 1 }
+            }
+        ];
+
+        // --- ICONS (Inline SVG) ---
+        const IconDashboard = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>;
+        const IconUsers = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+        const IconBook = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
+        const IconHistory = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+        const IconChart = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
+        const IconPrint = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>;
+        const IconImage = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+        const IconTrash = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+        const IconPlus = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>;
+
+        // --- STREAMING_CHUNK: Main React Application logic ---
+        const App = () => {
+            const [currentView, setCurrentView] = useState('dashboard');
+            const [students, setStudents] = useState([]);
+            const [journals, setJournals] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [firebaseActive, setFirebaseActive] = useState(false);
+
+            // AUTO-SETUP DATABASE & DETECT STORAGE MODE
+            useEffect(() => {
+                let checkAttempts = 0;
+                const checkFirebaseLib = setInterval(() => {
+                    checkAttempts++;
+                    const hasCredentials = firebaseConfig.apiKey !== "API_KEY_ANDA" && !IS_PREVIEW;
+
+                    if (window.firebaseInitialized && hasCredentials) {
+                        clearInterval(checkFirebaseLib);
+                        setupFirebaseConnection();
+                    } else if (checkAttempts > 15 || !hasCredentials) {
+                        // Fallback to Simulated Local Storage Engine
+                        clearInterval(checkFirebaseLib);
+                        setupLocalStorageConnection();
+                    }
+                }, 150);
+            }, []);
+
+            const setupFirebaseConnection = async () => {
+                try {
+                    const { initializeApp } = window.firebaseCore;
+                    const { getAuth, signInAnonymously } = window.firebaseAuthSDK;
+                    const { getFirestore, collection, onSnapshot } = window.firebaseFirestoreSDK;
+
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const db = getFirestore(app);
+
+                    // Sign-in anonymously to enable Security Rules checks
+                    await signInAnonymously(auth);
+
+                    setFirebaseActive(true);
+                    window.activeDb = db;
+
+                    // Bind Live Firestore streams
+                    const studentsRef = collection(db, "students");
+                    onSnapshot(studentsRef, (snapshot) => {
+                        if (snapshot.empty) {
+                            // Run autoSetupDatabase on Empty Firestore
+                            autoSetupDatabase(db);
+                        } else {
+                            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                            data.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+                            setStudents(data);
+                        }
+                    });
+
+                    const journalsRef = collection(db, "journals");
+                    onSnapshot(journalsRef, (snapshot) => {
+                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        data.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+                        setJournals(data);
+                    });
+
+                    setLoading(false);
+                } catch (error) {
+                    console.error("Firebase connection failed. Switched to LocalStorage Fallback.", error);
+                    setupLocalStorageConnection();
+                }
+            };
+
+            const setupLocalStorageConnection = () => {
+                setFirebaseActive(false);
+                
+                // Initialize default seeds if local storage is blank
+                if (!localStorage.getItem('jurnal_students')) {
+                    localStorage.setItem('jurnal_students', JSON.stringify(DUMMY_STUDENTS));
+                }
+                if (!localStorage.getItem('jurnal_journals')) {
+                    localStorage.setItem('jurnal_journals', JSON.stringify(DUMMY_JOURNALS));
+                }
+
+                // Load initial data
+                const localStuds = JSON.parse(localStorage.getItem('jurnal_students'));
+                const localJourns = JSON.parse(localStorage.getItem('jurnal_journals'));
+
+                localStuds.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+                localJourns.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+                setStudents(localStuds);
+                setJournals(localJourns);
+                setLoading(false);
+            };
+
+            const autoSetupDatabase = async (db) => {
+                const { collection, addDoc } = window.firebaseFirestoreSDK;
+                const studentsRef = collection(db, "students");
+                const journalsRef = collection(db, "journals");
+
+                // Inject dummy seeds
+                for (const student of DUMMY_STUDENTS) {
+                    await addDoc(studentsRef, {
+                        nis: student.nis,
+                        nama: student.nama,
+                        kelas: student.kelas
+                    });
+                }
+                for (const jrn of DUMMY_JOURNALS) {
+                    await addDoc(journalsRef, {
+                        tanggal: jrn.tanggal,
+                        kelas: jrn.kelas,
+                        mapel: jrn.mapel,
+                        materi: jrn.materi,
+                        catatan: jrn.catatan,
+                        fotoUrl: jrn.fotoUrl,
+                        waktu_input: jrn.waktu_input,
+                        absensi_data: jrn.absensi_data,
+                        rekap: jrn.rekap
+                    });
+                }
+            };
+
+            // --- DATABASE MUTATION PROXY ---
+            const addStudent = async (newStudent) => {
+                if (firebaseActive) {
+                    const { collection, addDoc } = window.firebaseFirestoreSDK;
+                    await addDoc(collection(window.activeDb, "students"), newStudent);
+                } else {
+                    const updated = [...students, { id: 'local_' + Date.now(), ...newStudent }];
+                    updated.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+                    localStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
+            };
+
+            const deleteStudent = async (id) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    await deleteDoc(doc(window.activeDb, "students", id));
+                } else {
+                    const updated = students.filter(s => s.id !== id);
+                    localStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
+            };
+
+            const addJournal = async (newJournal) => {
+                if (firebaseActive) {
+                    const { collection, addDoc } = window.firebaseFirestoreSDK;
+                    await addDoc(collection(window.activeDb, "journals"), newJournal);
+                } else {
+                    const updated = [{ id: 'j_local_' + Date.now(), ...newJournal }, ...journals];
+                    updated.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+                    localStorage.setItem('jurnal_journals', JSON.stringify(updated));
+                    setJournals(updated);
+                }
+            };
+
+            const deleteJournal = async (id) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    await deleteDoc(doc(window.activeDb, "journals", id));
+                } else {
+                    const updated = journals.filter(j => j.id !== id);
+                    localStorage.setItem('jurnal_journals', JSON.stringify(updated));
+                    setJournals(updated);
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="flex flex-col h-screen items-center justify-center bg-slate-900 text-white space-y-4">
+                        <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-lg font-semibold tracking-wider">Menyiapkan Aplikasi Jurnal...</p>
+                        <p className="text-xs text-slate-400">Menyinkronkan cloud & database simulasi</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex h-screen overflow-hidden">
+                    {/* Sidebar Navigation - Fixed on Desktop */}
+                    <aside className="hidden md:flex w-72 bg-indigo-950 text-white flex-col shadow-2xl print-hidden flex-shrink-0 z-30">
+                        <div className="p-8 border-b border-indigo-900/60 flex items-center space-x-3">
+                            <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-600/30">
+                                <IconBook />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-extrabold tracking-tight text-white leading-none">JURNAL GURU</h1>
+                                <span className="text-indigo-400 text-xs font-medium tracking-widest uppercase">E-Journal App</span>
+                            </div>
+                        </div>
+
+                        {/* Connection Indicator Pill */}
+                        <div className="px-8 mt-4">
+                            <div className={`text-[10px] uppercase font-bold py-1.5 px-3 rounded-full flex items-center space-x-2 w-fit ${firebaseActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>
+                                <span className={`w-2 h-2 rounded-full ${firebaseActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+                                <span>{firebaseActive ? 'Firebase Cloud Connect' : 'Simulated Preview Mode'}</span>
+                            </div>
+                        </div>
+
+                        <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
+                            <MenuButton icon={<IconDashboard />} label="Dashboard" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
+                            <MenuButton icon={<IconUsers />} label="Data Siswa" isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
+                            <MenuButton icon={<IconBook />} label="Isi Jurnal & Absen" isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
+                            <MenuButton icon={<IconHistory />} label="Riwayat Jurnal" isActive={currentView === 'riwayat'} onClick={() => setCurrentView('riwayat')} />
+                            <MenuButton icon={<IconChart />} label="Rekap" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
+                        </nav>
+
+                        <div className="p-6 border-t border-indigo-900/60 text-xs text-indigo-400 font-medium">
+                            <p className="opacity-80">Jurnal Mengajar Terpadu v1.1</p>
+                            <p className="mt-1 text-[10px] text-indigo-500">100% Client-Side Pure WebApp</p>
+                        </div>
+                    </aside>
+
+                    {/* Bottom Navigation for Mobile Devices */}
+                    <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-indigo-950/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-around shadow-2xl print-hidden z-40 border border-indigo-900/50">
+                        <MobileTabButton icon={<IconDashboard />} isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
+                        <MobileTabButton icon={<IconUsers />} isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
+                        <MobileTabButton icon={<IconBook />} isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
+                        <MobileTabButton icon={<IconHistory />} isActive={currentView === 'riwayat'} onClick={() => setCurrentView('riwayat')} />
+                        <MobileTabButton icon={<IconChart />} isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
+                    </nav>
+
+                    {/* Main Workspace */}
+                    <main className="flex-1 flex flex-col h-screen overflow-y-auto print-block relative bg-slate-50">
+                        {/* Header Banner - Hidden on Print */}
+                        <header className="bg-white/85 backdrop-blur-md shadow-sm border-b border-slate-100 px-8 py-5 flex items-center justify-between print-hidden sticky top-0 z-20">
+                            <h2 className="text-xl font-bold text-slate-800 capitalize tracking-tight flex items-center space-x-2">
+                                <span className="text-indigo-600">|</span>
+                                <span>{currentView.replace('_', ' ')}</span>
+                            </h2>
+                            <div className="flex items-center space-x-3 text-sm font-semibold text-slate-600 bg-slate-100/60 py-1.5 px-4 rounded-full border border-slate-200/50">
+                                <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
+                                <span>Guru Kelas Aktif</span>
+                            </div>
+                        </header>
+
+                        {/* Interactive View Routing */}
+                        <div className="p-4 md:p-8 flex-1 pb-24 md:pb-8">
+                            {currentView === 'dashboard' && <ViewDashboard journals={journals} students={students} changeView={setCurrentView} />}
+                            {currentView === 'siswa' && <ViewDataSiswa students={students} addStudent={addStudent} deleteStudent={deleteStudent} />}
+                            {currentView === 'isi_jurnal' && <ViewIsiJurnal students={students} addJournal={addJournal} onSuccess={() => setCurrentView('riwayat')} />}
+                            {currentView === 'riwayat' && <ViewRiwayat journals={journals} deleteJournal={deleteJournal} />}
+                            {currentView === 'rekap' && <ViewRekap journals={journals} students={students} />}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const MenuButton = ({ icon, label, isActive, onClick }) => (
+            <button 
+                onClick={onClick}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                    isActive 
+                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/25 font-semibold translate-x-1' 
+                        : 'text-indigo-200/80 hover:bg-indigo-900/50 hover:text-white hover:translate-x-1'
+                }`}
+            >
+                <span className={isActive ? 'text-white' : 'text-indigo-400'}>{icon}</span>
+                <span className="text-sm tracking-wide">{label}</span>
+            </button>
+        );
+
+        const MobileTabButton = ({ icon, isActive, onClick }) => (
+            <button 
+                onClick={onClick} 
+                className={`p-3 rounded-xl transition-all duration-200 ${
+                    isActive ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-indigo-300 hover:text-white'
+                }`}
+            >
+                {icon}
+            </button>
+        );
+
+        // --- STREAMING_CHUNK: Dashboard Component View ---
+        const ViewDashboard = ({ journals, students, changeView }) => {
+            const today = new Date().toISOString().split('T')[0];
+            const journalsToday = journals.filter(j => j.tanggal === today).length;
+            const classesCount = new Set(students.map(s => s.kelas)).size;
+
+            return (
+                <div className="space-y-8">
+                    {/* Modern Stat Card Container */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <StatCard title="Total Siswa Terdaftar" value={students.length} color="indigo" icon={<IconUsers/>} onClick={() => changeView('siswa')} />
+                        <StatCard title="Total Rombel / Kelas" value={classesCount} color="sky" icon={<IconBook/>} onClick={() => changeView('siswa')} />
+                        <StatCard title="Jurnal Terisi Hari Ini" value={journalsToday} color="emerald" icon={<IconHistory/>} onClick={() => changeView('riwayat')} />
+                    </div>
+
+                    <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-slate-100">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-900">Aktivitas Mengajar Terkini</h3>
+                                <p className="text-slate-500 text-xs">Menampilkan 5 entri jurnal mengajar terakhir</p>
+                            </div>
+                            <button onClick={() => changeView('riwayat')} className="mt-3 sm:mt-0 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition">
+                                Lihat Semua Jurnal &rarr;
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr className="bg-slate-50/75 text-slate-500 font-semibold border-b border-slate-100">
+                                        <th className="p-4">Tanggal KBM</th>
+                                        <th className="p-4">Kelas</th>
+                                        <th className="p-4">Mata Pelajaran</th>
+                                        <th className="p-4">Pokok Materi & Pembahasan</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {journals.slice(0, 5).map((j, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/50 transition">
+                                            <td className="p-4 font-medium text-slate-800">{j.tanggal}</td>
+                                            <td className="p-4"><span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">{j.kelas}</span></td>
+                                            <td className="p-4 text-slate-600 font-medium">{j.mapel}</td>
+                                            <td className="p-4 text-slate-500 max-w-xs truncate">{j.materi}</td>
+                                        </tr>
+                                    ))}
+                                    {journals.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="p-12 text-center text-slate-400">
+                                                <div className="flex flex-col items-center justify-center space-y-2">
+                                                    <IconBook />
+                                                    <p className="font-semibold text-sm">Belum ada jurnal KBM</p>
+                                                    <p className="text-xs">Klik menu "Isi Jurnal & Absen" di bilah menu samping.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StatCard = ({ title, value, color, icon, onClick }) => {
+            const colors = {
+                indigo: 'bg-indigo-600 shadow-indigo-600/20 text-indigo-600',
+                sky: 'bg-sky-500 shadow-sky-500/20 text-sky-500',
+                emerald: 'bg-emerald-500 shadow-emerald-500/20 text-emerald-500'
+            };
+            return (
+                <div onClick={onClick} className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 flex items-center space-x-5 cursor-pointer hover:shadow-md transition duration-200">
+                    <div className={`p-4 rounded-2xl bg-slate-50 ${colors[color]}`}>
+                        {icon}
+                    </div>
+                    <div>
+                        <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase">{title}</p>
+                        <p className="text-3xl font-extrabold text-slate-800 mt-1">{value}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK: Student Management Component View ---
+        const ViewDataSiswa = ({ students, addStudent, deleteStudent }) => {
+            const [nama, setNama] = useState('');
+            const [nis, setNis] = useState('');
+            const [kelas, setKelas] = useState('');
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleAdd = async (e) => {
+                e.preventDefault();
+                if(!nama || !nis || !kelas) return;
+                setIsSubmitting(true);
+                try {
+                    await addStudent({
+                        nama, 
+                        nis, 
+                        kelas: kelas.trim().toUpperCase()
+                    });
+                    setNama(''); 
+                    setNis('');
+                } catch (error) {
+                    console.error("Error adding student:", error);
+                }
+                setIsSubmitting(false);
+            };
+
+            const handleDelete = async (id) => {
+                if(confirm("Apakah Anda yakin ingin menghapus siswa ini? Tindakan ini tidak dapat dibatalkan.")) {
+                    try {
+                        await deleteStudent(id);
+                    } catch (error) {
+                        console.error("Error deleting student:", error);
+                    }
+                }
+            };
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Add Student Panel Form */}
+                    <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
+                            <span className="text-indigo-600 text-xl font-bold">+</span>
+                            <span>Tambah Siswa Baru</span>
+                        </h3>
+                        <form onSubmit={handleAdd} className="space-y-5">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nomor Induk Siswa (NIS)</label>
+                                <input type="text" required placeholder="Contoh: 24011" value={nis} onChange={e=>setNis(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Lengkap Siswa</label>
+                                <input type="text" required placeholder="Contoh: Adelia Pratiwi" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Rombel / Kelas</label>
+                                <input type="text" required placeholder="Contoh: XI-A atau XI-MIPA" value={kelas} onChange={e=>setKelas(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm uppercase placeholder-normal" />
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 disabled:opacity-50 text-sm shadow-md shadow-indigo-600/10">
+                                {isSubmitting ? 'Sedang Menyimpan...' : 'Masukkan Data Siswa'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Table View List */}
+                    <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
+                        <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3">
+                            Daftar Seluruh Murid Terdaftar ({students.length})
+                        </h3>
+                        <div className="overflow-y-auto max-h-[60vh] rounded-xl border border-slate-100">
+                            <table className="w-full text-left border-collapse text-sm">
+                                <thead className="sticky top-0 bg-slate-50 font-semibold z-10 border-b border-slate-100">
+                                    <tr className="text-slate-500">
+                                        <th className="p-4">Kelas</th>
+                                        <th className="p-4">NIS</th>
+                                        <th className="p-4">Nama Lengkap</th>
+                                        <th className="p-4 text-center">Hapus</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {students.map(s => (
+                                        <tr key={s.id} className="border-b hover:bg-slate-50/30 transition">
+                                            <td className="p-4"><span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">{s.kelas}</span></td>
+                                            <td className="p-4 text-slate-600 font-mono text-xs">{s.nis}</td>
+                                            <td className="p-4 text-slate-800 font-medium">{s.nama}</td>
+                                            <td className="p-4 text-center">
+                                                <button onClick={() => handleDelete(s.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Siswa">
+                                                    <IconTrash />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {students.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="p-12 text-center text-slate-400">
+                                                Belum ada data siswa di database. Tambahkan data di kolom sebelah kiri.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK: Interactive Attendance and KBM Entry Form ---
+        const ViewIsiJurnal = ({ students, addJournal, onSuccess }) => {
+            const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
+            const [kelasTerpilih, setKelasTerpilih] = useState('');
+            const [mapel, setMapel] = useState('');
+            const [materi, setMateri] = useState('');
+            const [catatan, setCatatan] = useState('');
+            const [absensi, setAbsensi] = useState({});
+            const [fotoBase64, setFotoBase64] = useState(null);
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const availableClasses = useMemo(() => {
+                return [...new Set(students.map(s => s.kelas))].sort();
+            }, [students]);
+            
+            const studentsInClass = useMemo(() => {
+                return students.filter(s => s.kelas === kelasTerpilih);
+            }, [students, kelasTerpilih]);
+
+            useEffect(() => {
+                const initialAbsen = {};
+                studentsInClass.forEach(s => {
+                    initialAbsen[s.id] = 'H';
+                });
+                setAbsensi(initialAbsen);
+            }, [studentsInClass]);
+
+            const handleAbsenChange = (studentId, status) => {
+                setAbsensi(prev => ({ ...prev, [studentId]: status }));
+            };
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > MAX_WIDTH) {
+                            height = Math.round((height * MAX_WIDTH) / width);
+                            width = MAX_WIDTH;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // Output to compressed base64
+                        const base64Str = canvas.toDataURL('image/jpeg', 0.65);
+                        setFotoBase64(base64Str);
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!kelasTerpilih || studentsInClass.length === 0) {
+                    alert("Harap pilih kelas yang telah memiliki murid!"); 
+                    return;
+                }
+                
+                setIsSubmitting(true);
+                
+                let hadir = 0, sakit = 0, izin = 0, alpa = 0;
+                Object.values(absensi).forEach(val => {
+                    if(val === 'H') hadir++;
+                    else if(val === 'S') sakit++;
+                    else if(val === 'I') izin++;
+                    else if(val === 'A') alpa++;
+                });
+
+                const payload = {
+                    tanggal,
+                    kelas: kelasTerpilih,
+                    mapel,
+                    materi,
+                    catatan,
+                    fotoUrl: fotoBase64 || "https://placehold.co/800x450/e2e8f0/64748b?text=Tidak+Ada+Dokumentasi+KBM",
+                    waktu_input: new Date().toISOString(),
+                    absensi_data: absensi,
+                    rekap: { hadir, sakit, izin, alpa }
+                };
+
+                try {
+                    await addJournal(payload);
+                    onSuccess();
+                } catch (error) {
+                    console.error("Error saving journal:", error);
+                }
+                setIsSubmitting(false);
+            };
+
+            return (
+                <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 max-w-5xl mx-auto">
+                    <div className="border-b border-slate-100 pb-4 mb-6">
+                        <h2 className="text-xl font-bold text-slate-900">Form Jurnal Mengajar Terintegrasi</h2>
+                        <p className="text-xs text-slate-500 mt-1">Pengisian jurnal sekaligus mengabsen seluruh murid di kelas bersangkutan</p>
+                    </div>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        {/* Section 1: Data KBM */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Tanggal Pertemuan</label>
+                                <input type="date" required value={tanggal} onChange={e=>setTanggal(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Pilih Kelas</label>
+                                <select required value={kelasTerpilih} onChange={e=>setKelasTerpilih(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white text-sm font-semibold">
+                                    <option value="">-- Silakan Pilih Kelas --</option>
+                                    {availableClasses.map(k => <option key={k} value={k}>{k}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Mata Pelajaran</label>
+                                <input type="text" required placeholder="Contoh: Fisika Terapan" value={mapel} onChange={e=>setMapel(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Pokok Bahasan / Materi</label>
+                                <input type="text" required placeholder="Contoh: Hukum Newton 1, 2, dan 3" value={materi} onChange={e=>setMateri(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                            </div>
+                        </div>
+
+                        {/* Section 2: Absensi Siswa */}
+                        {kelasTerpilih && studentsInClass.length > 0 ? (
+                            <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="bg-slate-50 px-6 py-4 border-b border-slate-200/80 flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800 text-sm">Lembar Absensi: Kelas {kelasTerpilih}</h3>
+                                    <span className="text-xs bg-indigo-50 text-indigo-600 font-bold px-3 py-1 rounded-full">{studentsInClass.length} Siswa Terdaftar</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-slate-200 text-slate-500 font-semibold bg-slate-50/50">
+                                                <th className="p-4 w-12 text-center">No</th>
+                                                <th className="p-4">Nama Siswa</th>
+                                                <th className="p-4 text-center text-emerald-600">Hadir</th>
+                                                <th className="p-4 text-center text-amber-500">Sakit</th>
+                                                <th className="p-4 text-center text-blue-500">Izin</th>
+                                                <th className="p-4 text-center text-rose-500">Alpa</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {studentsInClass.map((s, idx) => (
+                                                <tr key={s.id} className="hover:bg-slate-50/20 transition">
+                                                    <td className="p-4 text-center text-slate-400">{idx + 1}</td>
+                                                    <td className="p-4">
+                                                        <span className="font-semibold text-slate-800">{s.nama}</span>
+                                                        <span className="text-[10px] text-slate-400 block font-mono mt-0.5">{s.nis}</span>
+                                                    </td>
+                                                    {['H', 'S', 'I', 'A'].map(status => (
+                                                        <td key={status} className="p-4 text-center">
+                                                            <input 
+                                                                type="radio" 
+                                                                name={`absen_${s.id}`} 
+                                                                value={status}
+                                                                checked={absensi[s.id] === status}
+                                                                onChange={() => handleAbsenChange(s.id, status)}
+                                                                className={`w-5 h-5 cursor-pointer accent-indigo-600`}
+                                                            />
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : kelasTerpilih ? (
+                            <div className="p-8 text-center text-amber-600 bg-amber-50 rounded-2xl border border-amber-200/50 text-sm font-medium">
+                                Belum ada siswa yang didaftarkan pada kelas ini. Mohon tambahkan siswa di menu "Data Siswa" terlebih dahulu.
+                            </div>
+                        ) : null}
+
+                        {/* Section 3: Foto & Catatan */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Catatan Kelas / Hambatan KBM</label>
+                                <textarea rows="5" value={catatan} onChange={e=>setCatatan(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none text-sm placeholder-slate-300" placeholder="Tuliskan jika ada kendala jaringan, siswa yang mengganggu, atau penugasan PR khusus..."></textarea>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Foto Dokumentasi KBM</label>
+                                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition relative h-[142px] flex flex-col justify-center items-center">
+                                    {fotoBase64 ? (
+                                        <div className="relative">
+                                            <img src={fotoBase64} alt="Preview" className="h-28 rounded-lg shadow-md mx-auto object-cover" />
+                                            <button type="button" onClick={() => setFotoBase64(null)} className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 shadow hover:bg-rose-600 transition">
+                                                <IconTrash />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <IconImage className="mx-auto text-slate-300 mb-2" />
+                                            <p className="text-xs text-slate-400 mb-1">Unggah dokumentasi kelas (.jpg, .png)</p>
+                                            <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="pt-6 border-t border-slate-100">
+                            <button type="submit" disabled={isSubmitting || !kelasTerpilih || studentsInClass.length === 0} className="w-full py-4 bg-indigo-600 text-white text-base font-bold rounded-2xl shadow-xl shadow-indigo-600/10 hover:bg-indigo-700 transition duration-150 disabled:opacity-50">
+                                {isSubmitting ? 'Menyimpan Semua Data...' : 'Simpan Jurnal & Absensi Kelas'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK: History and Single Journal Print View ---
+        const ViewRiwayat = ({ journals, deleteJournal }) => {
+            const [selectedJournal, setSelectedJournal] = useState(null);
+
+            const handlePrintDetail = () => {
+                window.print();
+            };
+
+            const handleDelete = async (id) => {
+                if(confirm("Apakah Anda benar-benar ingin menghapus jurnal ini?")) {
+                    await deleteJournal(id);
+                    setSelectedJournal(null);
+                }
+            }
+
+            if (selectedJournal) {
+                return (
+                    <div className="max-w-4xl mx-auto relative print-block">
+                        {/* Print Header (Only visible on paper) */}
+                        <div className="hidden print-block text-center border-b-2 border-slate-900 pb-5 mb-8">
+                            <h1 className="text-2xl font-extrabold uppercase tracking-tight text-slate-900">Jurnal Mengajar Guru & Absensi Siswa</h1>
+                            <p className="text-sm font-semibold text-slate-500 mt-1">Sistem Dokumentasi Pembelajaran Mandiri</p>
+                        </div>
+
+                        <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 print:border-none print:shadow-none print:p-0">
+                            <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4 print-hidden">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">Lembar Detail Jurnal Pembelajaran</h2>
+                                    <p className="text-xs text-slate-500">Mata Pelajaran: {selectedJournal.mapel}</p>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <button onClick={handlePrintDetail} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold text-xs transition flex items-center space-x-2 shadow-sm shadow-emerald-600/10">
+                                        <IconPrint/> <span>Cetak Jurnal</span>
+                                    </button>
+                                    <button onClick={() => handleDelete(selectedJournal.id)} className="px-4 py-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-semibold text-xs transition flex items-center space-x-2">
+                                        <IconTrash/> <span>Hapus</span>
+                                    </button>
+                                    <button onClick={() => setSelectedJournal(null)} className="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-xl font-semibold text-xs transition">Kembali</button>
+                                </div>
+                            </div>
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8 text-sm">
+                                <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Tanggal KBM</span> <p className="text-slate-800 font-medium">{selectedJournal.tanggal}</p></div>
+                                <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Kelas / Rombel</span> <p className="text-slate-800 font-bold text-indigo-600">{selectedJournal.kelas}</p></div>
+                                <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Mata Pelajaran</span> <p className="text-slate-800 font-medium">{selectedJournal.mapel}</p></div>
+                                <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Pokok Bahasan / Materi</span> <p className="text-slate-800 font-medium">{selectedJournal.materi}</p></div>
+                            </div>
+
+                            {/* KBM Attendance Summary Pills */}
+                            <div className="mb-8 p-5 bg-indigo-50/40 rounded-2xl border border-indigo-100/50">
+                                <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-900 mb-3">Ikhtisar Kehadiran Kelas</h3>
+                                <div className="grid grid-cols-4 gap-4 text-center">
+                                    <div className="bg-white p-3 rounded-xl border border-indigo-100/30 shadow-sm"><span className="block text-[10px] font-bold text-slate-400 uppercase">Hadir</span><span className="text-xl font-extrabold text-emerald-600">{selectedJournal.rekap?.hadir || 0}</span></div>
+                                    <div className="bg-white p-3 rounded-xl border border-indigo-100/30 shadow-sm"><span className="block text-[10px] font-bold text-slate-400 uppercase">Sakit</span><span className="text-xl font-extrabold text-amber-500">{selectedJournal.rekap?.sakit || 0}</span></div>
+                                    <div className="bg-white p-3 rounded-xl border border-indigo-100/30 shadow-sm"><span className="block text-[10px] font-bold text-slate-400 uppercase">Izin</span><span className="text-xl font-extrabold text-blue-500">{selectedJournal.rekap?.izin || 0}</span></div>
+                                    <div className="bg-white p-3 rounded-xl border border-indigo-100/30 shadow-sm"><span className="block text-[10px] font-bold text-slate-400 uppercase">Alpa</span><span className="text-xl font-extrabold text-rose-500">{selectedJournal.rekap?.alpa || 0}</span></div>
+                                </div>
+                            </div>
+
+                            {/* Additional Comments block */}
+                            <div className="mb-8">
+                                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-2 border-b border-slate-100 pb-1">Catatan KBM & Kendala</h3>
+                                <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedJournal.catatan || 'Tidak ada catatan khusus.'}</p>
+                            </div>
+
+                            {/* Image documentation preview */}
+                            {selectedJournal.fotoUrl && (
+                                <div className="mb-12 print-break-inside-avoid">
+                                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">Dokumentasi Foto KBM</h3>
+                                    <img src={selectedJournal.fotoUrl} alt="Dokumentasi KBM" className="max-w-lg w-full h-auto rounded-2xl border border-slate-100 shadow-md" />
+                                </div>
+                            )}
+
+                            {/* Print Signature block */}
+                            <div className="hidden print:flex justify-between mt-20 pt-8 border-t border-slate-100">
+                                <div className="text-center w-48">
+                                    <p className="text-xs text-slate-500">Mengetahui,</p>
+                                    <p className="text-xs font-semibold text-slate-800">Kepala Sekolah</p>
+                                    <div className="h-20"></div>
+                                    <p className="font-bold text-slate-900 underline">_______________________</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">NIP. </p>
+                                </div>
+                                <div className="text-center w-48">
+                                    <p className="text-xs text-slate-500">Menyatakan Sebenarnya,</p>
+                                    <p className="text-xs font-semibold text-slate-800">Guru Pengajar</p>
+                                    <div className="h-20"></div>
+                                    <p className="font-bold text-slate-900 underline">_______________________</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">NIP. </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-hidden">
+                    <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/75 flex justify-between items-center">
+                        <h2 className="text-base font-bold text-slate-800">Riwayat Jurnal KBM Guru</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b border-slate-100 text-slate-500 text-xs font-bold uppercase tracking-wider bg-slate-50/30">
+                                    <th className="p-4">Tanggal</th>
+                                    <th className="p-4">Kelas</th>
+                                    <th className="p-4">Mata Pelajaran</th>
+                                    <th className="p-4">Pembahasan Materi</th>
+                                    <th className="p-4 text-center">Rasio Absensi</th>
+                                    <th className="p-4 text-center">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {journals.map(j => (
+                                    <tr key={j.id} className="hover:bg-indigo-50/10 transition">
+                                        <td className="p-4 text-sm font-medium text-slate-800 whitespace-nowrap">{j.tanggal}</td>
+                                        <td className="p-4"><span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">{j.kelas}</span></td>
+                                        <td className="p-4 text-sm font-semibold text-slate-700">{j.mapel}</td>
+                                        <td className="p-4 text-sm text-slate-500 truncate max-w-[200px]">{j.materi}</td>
+                                        <td className="p-4 text-center text-sm">
+                                            <span className="text-emerald-600 font-extrabold">{j.rekap?.hadir || 0}</span>
+                                            <span className="text-slate-300 mx-1">/</span>
+                                            <span className="text-rose-500 font-extrabold">{j.rekap?.alpa || 0}</span>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <button onClick={() => setSelectedJournal(j)} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
+                                                Detail KBM
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {journals.length === 0 && (
+                                    <tr>
+                                        <td colSpan="6" className="p-12 text-center text-slate-400">
+                                            Belum ada log jurnal mengajar yang terekam.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK: Double-Rekap (Attendance + KBM Journals Combined) ---
+        const ViewRekap = ({ journals, students }) => {
+            const [filterKelas, setFilterKelas] = useState('');
+            const [filterBulan, setFilterBulan] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+            const [activeTab, setActiveTab] = useState('kehadiran'); // 'kehadiran' or 'jurnal'
+
+            const availableClasses = useMemo(() => {
+                return [...new Set(students.map(s => s.kelas))].sort();
+            }, [students]);
+
+            useEffect(() => {
+                if (availableClasses.length > 0 && !filterKelas) {
+                    setFilterKelas(availableClasses[0]);
+                }
+            }, [availableClasses, filterKelas]);
+
+            const handlePrintRekap = () => {
+                window.print();
+            };
+
+            // Calculate Kehadiran Recap Matrix
+            const attendanceRecap = useMemo(() => {
+                if (!filterKelas || !filterBulan) return { dates: [], studentData: [] };
+
+                const classStudents = students.filter(s => s.kelas === filterKelas);
+                const classJournals = journals.filter(j => 
+                    j.kelas === filterKelas && 
+                    j.tanggal.startsWith(filterBulan)
+                ).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+
+                const dates = classJournals.map(j => ({ id: j.id, date: j.tanggal.split('-')[2] }));
+
+                const studentData = classStudents.map(siswa => {
+                    const absensiArr = classJournals.map(j => {
+                        return j.absensi_data ? j.absensi_data[siswa.id] || '-' : '-';
+                    });
+                    
+                    const totalH = absensiArr.filter(x => x === 'H').length;
+                    const totalS = absensiArr.filter(x => x === 'S').length;
+                    const totalI = absensiArr.filter(x => x === 'I').length;
+                    const totalA = absensiArr.filter(x => x === 'A').length;
+
+                    return { ...siswa, absensiArr, totalH, totalS, totalI, totalA };
+                });
+
+                return { dates, studentData };
+            }, [journals, students, filterKelas, filterBulan]);
+
+            // Calculate Jurnal KBM Recap
+            const journalsRecap = useMemo(() => {
+                if (!filterKelas || !filterBulan) return [];
+                
+                return journals.filter(j => 
+                    j.kelas === filterKelas && 
+                    j.tanggal.startsWith(filterBulan)
+                ).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+            }, [journals, filterKelas, filterBulan]);
+
+            return (
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-block print:border-none print:shadow-none print:p-0">
+                    
+                    {/* Tab Navigation (Hidden during print) */}
+                    <div className="print-hidden border-b border-slate-100 flex flex-wrap bg-slate-50/50 justify-between items-center px-6">
+                        <div className="flex space-x-1 py-3">
+                            <button 
+                                onClick={() => setActiveTab('kehadiran')}
+                                className={`px-5 py-2.5 font-bold text-xs tracking-wide uppercase rounded-xl transition ${activeTab === 'kehadiran' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                                Rekap Kehadiran Siswa
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('jurnal')}
+                                className={`px-5 py-2.5 font-bold text-xs tracking-wide uppercase rounded-xl transition ${activeTab === 'jurnal' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                                Rekap Jurnal Mengajar (KBM)
+                            </button>
+                        </div>
+
+                        {/* Top action controls */}
+                        <div className="flex items-center space-x-3 py-3">
+                            <select value={filterKelas} onChange={e=>setFilterKelas(e.target.value)} className="p-2 text-xs border border-slate-200 rounded-xl font-semibold outline-none bg-white">
+                                {availableClasses.map(k => <option key={k} value={k}>Kelas: {k}</option>)}
+                            </select>
+                            <input type="month" value={filterBulan} onChange={e=>setFilterBulan(e.target.value)} className="p-2 text-xs border border-slate-200 rounded-xl font-semibold outline-none bg-white" />
+                            <button onClick={handlePrintRekap} disabled={!filterKelas} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold text-xs transition flex items-center space-x-1.5 disabled:opacity-50">
+                                <IconPrint/> <span>Cetak Laporan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="p-6 md:p-8 print:p-0">
+                        {/* Print Header (Only visible on paper) */}
+                        <div className="hidden print-block text-center mb-8 border-b-2 border-slate-900 pb-5">
+                            <h1 className="text-2xl font-extrabold uppercase tracking-tight text-slate-900">
+                                {activeTab === 'kehadiran' ? 'Laporan Rekapitulasi Kehadiran Siswa' : 'Laporan Rekapitulasi Kegiatan Belajar Mengajar'}
+                            </h1>
+                            <p className="text-sm font-semibold text-slate-500 mt-1">Kelas: {filterKelas} | Bulan: {filterBulan}</p>
+                        </div>
+
+                        {filterKelas ? (
+                            activeTab === 'kehadiran' ? (
+                                /* --- TAB: REKAP KEHADIRAN SISWA --- */
+                                <div className="overflow-x-auto print:overflow-visible">
+                                    <table className="w-full text-xs border-collapse border border-slate-300">
+                                        <thead className="bg-slate-100 text-slate-800">
+                                            <tr>
+                                                <th className="border border-slate-300 p-2.5 text-center w-10" rowSpan="2">No</th>
+                                                <th className="border border-slate-300 p-2.5 text-left min-w-[200px]" rowSpan="2">Nama Lengkap Siswa</th>
+                                                <th className="border border-slate-300 p-2.5 text-center" colSpan={Math.max(attendanceRecap.dates.length, 1)}>Tanggal Pertemuan</th>
+                                                <th className="border border-slate-300 p-2.5 text-center" colSpan="4">Akumulasi Absensi</th>
+                                            </tr>
+                                            <tr>
+                                                {attendanceRecap.dates.length > 0 ? attendanceRecap.dates.map((d, i) => (
+                                                    <th key={i} className="border border-slate-300 p-1.5 text-center min-w-[30px] bg-indigo-50/50" title={`Id Jurnal: ${d.id}`}>{d.date}</th>
+                                                )) : <th className="border border-slate-300 p-1.5 text-center text-slate-400 italic">Belum ada KBM</th>}
+                                                
+                                                <th className="border border-slate-300 p-1.5 text-center text-emerald-700 bg-emerald-50 w-8">H</th>
+                                                <th className="border border-slate-300 p-1.5 text-center text-amber-600 bg-amber-50 w-8">S</th>
+                                                <th className="border border-slate-300 p-1.5 text-center text-blue-700 bg-blue-50 w-8">I</th>
+                                                <th className="border border-slate-300 p-1.5 text-center text-rose-700 bg-rose-50 w-8">A</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {attendanceRecap.studentData.map((s, idx) => (
+                                                <tr key={s.id} className="hover:bg-slate-50/50 transition print-break-inside-avoid">
+                                                    <td className="border border-slate-300 p-2.5 text-center">{idx + 1}</td>
+                                                    <td className="border border-slate-300 p-2.5 font-semibold text-slate-800">
+                                                        {s.nama}
+                                                        <span className="print-hidden text-[9px] text-slate-400 font-mono ml-2 font-normal">({s.nis})</span>
+                                                    </td>
+                                                    
+                                                    {attendanceRecap.dates.length > 0 ? s.absensiArr.map((status, i) => (
+                                                        <td key={i} className={`border border-slate-300 p-2.5 text-center font-bold 
+                                                            ${status === 'H' ? 'text-emerald-600' : ''}
+                                                            ${status === 'S' ? 'text-amber-500' : ''}
+                                                            ${status === 'I' ? 'text-blue-600' : ''}
+                                                            ${status === 'A' ? 'text-rose-600' : ''}
+                                                        `}>{status}</td>
+                                                    )) : <td className="border border-slate-300 p-2.5 text-center bg-slate-50 text-slate-400">-</td>}
+
+                                                    <td className="border border-slate-300 p-2 text-center font-extrabold bg-emerald-50/30 text-emerald-600">{s.totalH}</td>
+                                                    <td className="border border-slate-300 p-2 text-center font-extrabold bg-amber-50/30 text-amber-500">{s.totalS}</td>
+                                                    <td className="border border-slate-300 p-2 text-center font-extrabold bg-blue-50/30 text-blue-600">{s.totalI}</td>
+                                                    <td className="border border-slate-300 p-2 text-center font-extrabold bg-rose-50/30 text-rose-600">{s.totalA}</td>
+                                                </tr>
+                                            ))}
+                                            {attendanceRecap.studentData.length === 0 && (
+                                                <tr>
+                                                    <td colSpan={6 + attendanceRecap.dates.length} className="border border-slate-300 p-6 text-center text-slate-400 bg-slate-50">
+                                                        Belum ada data siswa untuk kelas ini.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                /* --- TAB: REKAP JURNAL KBM --- */
+                                <div className="overflow-x-auto print:overflow-visible">
+                                    <table className="w-full text-xs border-collapse border border-slate-300">
+                                        <thead className="bg-slate-100 text-slate-800 font-semibold">
+                                            <tr>
+                                                <th className="border border-slate-300 p-3 text-center w-12">No</th>
+                                                <th className="border border-slate-300 p-3 text-left w-28">Tanggal</th>
+                                                <th className="border border-slate-300 p-3 text-left w-48">Mata Pelajaran</th>
+                                                <th className="border border-slate-300 p-3 text-left">Materi Pembahasan KBM</th>
+                                                <th className="border border-slate-300 p-3 text-left min-w-[200px]">Hambatan / Catatan Guru</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {journalsRecap.map((j, idx) => (
+                                                <tr key={j.id} className="hover:bg-slate-50/50 print-break-inside-avoid">
+                                                    <td className="border border-slate-300 p-3 text-center align-top text-slate-400">{idx + 1}</td>
+                                                    <td className="border border-slate-300 p-3 font-semibold text-slate-800 align-top whitespace-nowrap">{j.tanggal}</td>
+                                                    <td className="border border-slate-300 p-3 font-medium text-slate-700 align-top">{j.mapel}</td>
+                                                    <td className="border border-slate-300 p-3 text-slate-800 align-top">{j.materi}</td>
+                                                    <td className="border border-slate-300 p-3 text-slate-500 align-top whitespace-pre-wrap">{j.catatan || '-'}</td>
+                                                </tr>
+                                            ))}
+                                            {journalsRecap.length === 0 && (
+                                                <tr>
+                                                    <td colSpan="5" className="border border-slate-300 p-8 text-center text-slate-400 bg-slate-50">
+                                                        Belum ada log jurnal mengajar pada bulan/kelas terpilih.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )
+                        ) : (
+                            <div className="p-12 text-center text-slate-400 print-hidden bg-slate-50 rounded-2xl border border-dashed">
+                                Tidak ada kelas yang terpilih. Silakan daftarkan siswa dan kelas terlebih dahulu.
+                            </div>
+                        )}
+                        
+                        {/* Signature Footer Area for printed sheets */}
+                        <div className="hidden print:flex justify-between mt-20 pt-8">
+                            <div className="text-center w-48">
+                                <p className="text-xs text-slate-500">Mengetahui,</p>
+                                <p className="text-xs font-semibold text-slate-800">Kepala Sekolah</p>
+                                <div className="h-20"></div>
+                                <p className="font-bold text-slate-900 underline">_______________________</p>
+                                <p className="text-[10px] text-slate-400 mt-1">NIP. </p>
+                            </div>
+                            <div className="text-center w-48">
+                                <p className="text-xs text-slate-500">Menyatakan Sebenarnya,</p>
+                                <p className="text-xs font-semibold text-slate-800">Guru Pengajar</p>
+                                <div className="h-20"></div>
+                                <p className="font-bold text-slate-900 underline">_______________________</p>
+                                <p className="text-[10px] text-slate-400 mt-1">NIP. </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
