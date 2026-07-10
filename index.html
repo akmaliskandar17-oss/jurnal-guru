@@ -101,7 +101,7 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // Kunci Pratinjau: Set ke FALSE jika sudah siap dihubungkan ke Firebase Anda secara live
-        const IS_PREVIEW = false; 
+        const IS_PREVIEW = true; 
         const firebaseConfig = {
             apiKey: "AIzaSyAjrv3XgDHtjdXJwDUiXhGtIX4P8EAeR5k",
   authDomain: "ejurnal-10654.firebaseapp.com",
@@ -152,7 +152,6 @@
             }
         };
 
-        // --- STREAMING_CHUNK:Mendefinisikan data demo bawaan ---
         const DUMMY_USERS = [
             { id: "u1", nip: "19850101", nama: "Budi Utomo, S.Pd.", password: "password123", role: "guru", mapel: "Matematika" },
             { id: "u2", nip: "19900202", nama: "Siti Aminah, M.Pd.", password: "password123", role: "guru", mapel: "Fisika" },
@@ -192,7 +191,9 @@
                 guru_nama: "Budi Utomo, S.Pd.",
                 guru_nip: "19850101",
                 absensi_data: { "s1": "H", "s2": "H", "s3": "S", "s4": "H", "s5": "I" },
-                rekap: { hadir: 3, sakit: 1, izin: 1, alpa: 0 }
+                rekap: { hadir: 3, sakit: 1, izin: 1, alpa: 0 },
+                jumlah_jam: "2",
+                guru_pengganti: ""
             },
             {
                 id: "j2",
@@ -206,11 +207,12 @@
                 guru_nama: "Siti Aminah, M.Pd.",
                 guru_nip: "19900202",
                 absensi_data: { "s6": "H", "s7": "A", "s8": "H", "s9": "H", "s10": "H" },
-                rekap: { hadir: 4, sakit: 0, izin: 0, alpa: 1 }
+                rekap: { hadir: 4, sakit: 0, izin: 0, alpa: 1 },
+                jumlah_jam: "3",
+                guru_pengganti: ""
             }
         ];
 
-        // --- STREAMING_CHUNK:Mendefinisikan komponen ikon SVG ---
         const IconDashboard = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>;
         const IconUsers = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
         const IconBook = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>;
@@ -221,7 +223,6 @@
         const IconTrash = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
         const IconLock = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
 
-        // --- STREAMING_CHUNK:Mendefinisikan dialog modal kustom ---
         const CustomConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
             if (!isOpen) return null;
             return (
@@ -254,13 +255,12 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen login ---
         const ViewLogin = ({ onLoginSuccess, firebaseActive, triggerAlert }) => {
             const [nip, setNip] = useState('');
             const [password, setPassword] = useState('');
             const [error, setError] = useState('');
             const [loading, setLoading] = useState(false);
-            const [activeRoleTab, setActiveRoleTab] = useState('guru'); // guru, kepsek, atau admin
+            const [activeRoleTab, setActiveRoleTab] = useState('guru'); // guru, kepsek, admin
 
             const handleLogin = async (e) => {
                 e.preventDefault();
@@ -307,13 +307,13 @@
 
             return (
                 <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4">
-                    <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl text-white">
+                    <div className="w-full max-w-md bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 shadow-2xl text-white animate-in fade-in zoom-in duration-300">
                         <div className="text-center mb-6">
                             <div className="w-16 h-16 bg-indigo-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
                                 <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             </div>
                             <h2 className="text-2xl font-black tracking-tight uppercase">E-Jurnal Terpadu</h2>
-                            <p className="text-slate-300 text-xs mt-1">SMKN 3 Selayar &amp; Sekolah Terintegrasi</p>
+                            <p className="text-slate-300 text-xs mt-1">Sistem Jurnal &amp; Monitoring Terintegrasi</p>
                         </div>
 
                         <div className="mb-4 text-center">
@@ -323,7 +323,6 @@
                             </span>
                         </div>
 
-                        {/* Switch Tab Login Role (3 Peran) */}
                         <div className="grid grid-cols-3 gap-1 bg-white/5 p-1 rounded-2xl border border-white/10 mb-6">
                             <button 
                                 onClick={() => { setActiveRoleTab('guru'); setError(''); }} 
@@ -407,7 +406,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Mengonfigurasi komponen utama aplikasi ---
         const App = () => {
             const [currentView, setCurrentView] = useState('dashboard');
             const [students, setStudents] = useState([]);
@@ -417,7 +415,7 @@
             const [firebaseActive, setFirebaseActive] = useState(false);
             const [loggedInUser, setLoggedInUser] = useState(null);
 
-            // State khusus untuk Custom Dialogs (Modal)
+            // State kustom Modal Dialogs
             const [confirmState, setConfirmState] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
             const [alertState, setAlertState] = useState({ isOpen: false, title: '', message: '' });
 
@@ -437,7 +435,6 @@
                 setAlertState({ isOpen: true, title, message });
             };
 
-            // Memulihkan Sesi Login Terakhir secara aman
             useEffect(() => {
                 const savedUser = safeStorage.getItem('jurnal_active_user');
                 if (savedUser) {
@@ -480,7 +477,6 @@
                     setFirebaseActive(true);
                     window.activeDb = db;
 
-                    // Stream Live Firestore Data Siswa
                     const studentsRef = collection(db, "students");
                     onSnapshot(studentsRef, (snapshot) => {
                         if (snapshot.empty) {
@@ -492,7 +488,6 @@
                         }
                     });
 
-                    // Stream Live Firestore Data Jurnal
                     const journalsRef = collection(db, "journals");
                     onSnapshot(journalsRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -500,7 +495,6 @@
                         setJournals(data);
                     });
 
-                    // Stream Live Firestore Data Guru
                     const gurusRef = collection(db, "gurus");
                     onSnapshot(gurusRef, (snapshot) => {
                         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -509,7 +503,7 @@
 
                     setLoading(false);
                 } catch (error) {
-                    console.error("Firebase Gagal. Berpindah ke Simulasi safeStorage.", error);
+                    console.error("Firebase Gagal. Berpindah ke Simulasi localstorage.", error);
                     setupLocalStorageConnection();
                 }
             };
@@ -565,7 +559,9 @@
                         guru_nama: jrn.guru_nama,
                         guru_nip: jrn.guru_nip,
                         absensi_data: jrn.absensi_data,
-                        rekap: jrn.rekap
+                        rekap: jrn.rekap,
+                        jumlah_jam: jrn.jumlah_jam || "2",
+                        guru_pengganti: jrn.guru_pengganti || ""
                     });
                 }
                 for (const gr of DUMMY_USERS) {
@@ -608,21 +604,59 @@
                 }
             };
 
-            const deleteStudent = async (id) => {
-                triggerConfirm(
-                    "Hapus Siswa",
-                    "Apakah Anda yakin ingin menghapus siswa ini secara permanen dari daftar kelas?",
-                    async () => {
-                        if (firebaseActive) {
-                            const { doc, deleteDoc } = window.firebaseFirestoreSDK;
-                            await deleteDoc(doc(window.activeDb, "students", id));
-                        } else {
-                            const updated = students.filter(s => s.id !== id);
-                            safeStorage.setItem('jurnal_students', JSON.stringify(updated));
-                            setStudents(updated);
-                        }
+            const updateStudent = async (id, updatedStudent) => {
+                if (firebaseActive) {
+                    const { doc, updateDoc } = window.firebaseFirestoreSDK;
+                    await updateDoc(doc(window.activeDb, "students", id), updatedStudent);
+                } else {
+                    const updated = students.map(s => s.id === id ? { ...s, ...updatedStudent } : s);
+                    updated.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+                    safeStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
+            };
+
+            const addStudentsBulk = async (studentList) => {
+                if (firebaseActive) {
+                    const { collection, addDoc } = window.firebaseFirestoreSDK;
+                    const studentsRef = collection(window.activeDb, "students");
+                    for (const student of studentList) {
+                        await addDoc(studentsRef, student);
                     }
-                );
+                } else {
+                    const localWithIds = studentList.map((s, idx) => ({
+                        id: 'local_bulk_' + Date.now() + '_' + idx,
+                        ...s
+                    }));
+                    const updated = [...students, ...localWithIds];
+                    updated.sort((a, b) => a.kelas.localeCompare(b.kelas) || a.nama.localeCompare(b.nama));
+                    safeStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
+            };
+
+            const deleteStudent = async (id) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    await deleteDoc(doc(window.activeDb, "students", id));
+                } else {
+                    const updated = students.filter(s => s.id !== id);
+                    safeStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
+            };
+
+            const deleteStudentsBulk = async (ids) => {
+                if (firebaseActive) {
+                    const { doc, deleteDoc } = window.firebaseFirestoreSDK;
+                    for (const id of ids) {
+                        await deleteDoc(doc(window.activeDb, "students", id));
+                    }
+                } else {
+                    const updated = students.filter(s => !ids.includes(s.id));
+                    safeStorage.setItem('jurnal_students', JSON.stringify(updated));
+                    setStudents(updated);
+                }
             };
 
             const addJournal = async (newJournal) => {
@@ -681,7 +715,6 @@
                     setGurus(updated);
                 }
                 
-                // Update sesi aktif jika pengguna yang diperbarui adalah pengguna yang sedang login
                 if (loggedInUser && loggedInUser.id === id) {
                     const newSession = { ...loggedInUser, ...updatedGuru };
                     setLoggedInUser(newSession);
@@ -725,7 +758,6 @@
 
             return (
                 <div className="flex h-screen overflow-hidden">
-                    {/* CUSTOM MODAL SYSTEM */}
                     <CustomConfirmModal 
                         isOpen={confirmState.isOpen}
                         title={confirmState.title}
@@ -764,7 +796,6 @@
 
                         <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto">
                             {isAdmin ? (
-                                // MENU ADMINISTRATOR
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard Admin" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconUsers />} label="Kelola Akun Guru" isActive={currentView === 'kelola_guru'} onClick={() => setCurrentView('kelola_guru')} />
@@ -772,14 +803,12 @@
                                     <MenuButton icon={<IconLock />} label="Pengaturan Admin" isActive={currentView === 'kelola_admin'} onClick={() => setCurrentView('kelola_admin')} />
                                 </>
                             ) : isKepsek ? (
-                                // MENU KEPALA SEKOLAH
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard Kepsek" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconHistory />} label="Monitoring Jurnal" isActive={currentView === 'monitoring_jurnal'} onClick={() => setCurrentView('monitoring_jurnal')} />
                                     <MenuButton icon={<IconChart />} label="Rekap &amp; Laporan" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
                                 </>
                             ) : (
-                                // MENU GURU
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconUsers />} label="Data Siswa" isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
@@ -810,7 +839,7 @@
                         </div>
                     </aside>
 
-                    {/* Navigasi Mobile (Bawah Layar) */}
+                    {}
                     <nav className="md:hidden fixed bottom-4 left-4 right-4 bg-slate-900/95 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-around shadow-2xl print-hidden z-40 border border-white/10">
                         {isAdmin ? (
                             <>
@@ -839,7 +868,7 @@
                         </button>
                     </nav>
 
-                    {/* Area Ruang Kerja Utama */}
+                    {}
                     <main className="flex-1 flex flex-col h-screen overflow-y-auto print-block relative bg-slate-50">
                         <header className="bg-white/85 backdrop-blur-md shadow-sm border-b border-slate-100 px-8 py-5 flex items-center justify-between print-hidden sticky top-0 z-20">
                             <h2 className="text-xl font-bold text-slate-800 capitalize tracking-tight flex items-center space-x-2">
@@ -852,28 +881,24 @@
                             </div>
                         </header>
 
-                        {}
                         <div className="p-4 md:p-8 flex-1 pb-24 md:pb-8">
                             {isAdmin ? (
-                                // ROUTING TAMPILAN ADMINISTRATOR
                                 <>
                                     {currentView === 'dashboard' && <ViewDashboardAdmin gurus={gurus} students={students} journals={journals} />}
-                                    {currentView === 'kelola_guru' && <ViewKelolaGuru gurus={gurus} addGuru={addGuru} updateGuru={updateGuru} deleteGuru={deleteGuru} />}
-                                    {currentView === 'kelola_kepsek' && <ViewKelolaKepsek gurus={gurus} updateGuru={updateGuru} />}
-                                    {currentView === 'kelola_admin' && <ViewKelolaAdmin gurus={gurus} updateGuru={updateGuru} loggedInUser={loggedInUser} />}
+                                    {currentView === 'kelola_guru' && <ViewKelolaGuru gurus={gurus} addGuru={addGuru} updateGuru={updateGuru} deleteGuru={deleteGuru} triggerAlert={triggerAlert} />}
+                                    {currentView === 'kelola_kepsek' && <ViewKelolaKepsek gurus={gurus} updateGuru={updateGuru} triggerAlert={triggerAlert} />}
+                                    {currentView === 'kelola_admin' && <ViewKelolaAdmin gurus={gurus} updateGuru={updateGuru} loggedInUser={loggedInUser} triggerAlert={triggerAlert} />}
                                 </>
                             ) : isKepsek ? (
-                                // ROUTING TAMPILAN KEPALA SEKOLAH
                                 <>
                                     {currentView === 'dashboard' && <ViewDashboardKepsek journals={journals} students={students} changeView={setCurrentView} />}
                                     {currentView === 'monitoring_jurnal' && <ViewMonitoringJurnal journals={journals} deleteJournal={deleteJournal} />}
                                     {currentView === 'rekap' && <ViewRekap journals={journals} students={students} loggedInUser={loggedInUser} />}
                                 </>
                             ) : (
-                                // ROUTING TAMPILAN GURU
                                 <>
                                     {currentView === 'dashboard' && <ViewDashboard journals={journals} students={students} changeView={setCurrentView} />}
-                                    {currentView === 'siswa' && <ViewDataSiswa students={students} addStudent={addStudent} deleteStudent={deleteStudent} />}
+                                    {currentView === 'siswa' && <ViewDataSiswa students={students} addStudent={addStudent} updateStudent={updateStudent} addStudentsBulk={addStudentsBulk} deleteStudent={deleteStudent} deleteStudentsBulk={deleteStudentsBulk} triggerAlert={triggerAlert} triggerConfirm={triggerConfirm} />}
                                     {currentView === 'isi_jurnal' && <ViewIsiJurnal students={students} addJournal={addJournal} onSuccess={() => setCurrentView('riwayat')} triggerAlert={triggerAlert} />}
                                     {currentView === 'riwayat' && <ViewRiwayat journals={journals} deleteJournal={deleteJournal} />}
                                     {currentView === 'rekap' && <ViewRekap journals={journals} students={students} loggedInUser={loggedInUser} />}
@@ -910,13 +935,12 @@
             </button>
         );
 
-        // --- STREAMING_CHUNK:Membangun komponen Dashboard Admin ---
         const ViewDashboardAdmin = ({ gurus, students, journals }) => {
             const listGuru = gurus.filter(g => g.role === 'guru');
             const listKepsek = gurus.filter(g => g.role === 'kepsek');
 
             return (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-in fade-in duration-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <StatCard title="Total Guru Terdaftar" value={listGuru.length} color="indigo" icon={<IconUsers/>} />
                         <StatCard title="Kepala Sekolah" value={listKepsek.length} color="sky" icon={<IconLock/>} />
@@ -937,8 +961,7 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Kelola Guru ---
-        const ViewKelolaGuru = ({ gurus, addGuru, updateGuru, deleteGuru }) => {
+        const ViewKelolaGuru = ({ gurus, addGuru, updateGuru, deleteGuru, triggerAlert }) => {
             const listGuru = useMemo(() => gurus.filter(g => g.role === 'guru'), [gurus]);
 
             const [nip, setNip] = useState('');
@@ -964,16 +987,16 @@
                     if (editingId) {
                         await updateGuru(editingId, payload);
                         setEditingId(null);
+                        triggerAlert("Guru Diperbarui", "Data guru berhasil disimpan!");
                     } else {
-                        // Cek duplikasi NIP
                         const exist = gurus.find(g => g.nip === payload.nip);
                         if (exist) {
-                            alert("Guru dengan NIP tersebut sudah terdaftar!");
+                            triggerAlert("Peringatan", "Guru dengan NIP tersebut sudah terdaftar!");
                             return;
                         }
                         await addGuru(payload);
+                        triggerAlert("Guru Ditambahkan", "Data guru baru berhasil didaftarkan!");
                     }
-                    // Reset Form
                     setNip('');
                     setNama('');
                     setMapel('');
@@ -1000,8 +1023,7 @@
             };
 
             return (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Form Input Guru */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-200">
                     <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
                         <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
                             <span className="text-indigo-600 text-xl font-bold">{editingId ? '✎' : '+'}</span>
@@ -1014,7 +1036,7 @@
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Lengkap Guru</label>
-                                <input type="text" required placeholder="Nama Lengkap & Gelar" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                                <input type="text" required placeholder="Nama Lengkap &amp; Gelar" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Mata Pelajaran Utama</label>
@@ -1037,7 +1059,6 @@
                         </form>
                     </div>
 
-                    {/* Daftar Guru Terdaftar */}
                     <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
                         <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3">
                             Daftar Guru Pengajar ({listGuru.length})
@@ -1085,8 +1106,7 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Kelola Kepala Sekolah ---
-        const ViewKelolaKepsek = ({ gurus, updateGuru }) => {
+        const ViewKelolaKepsek = ({ gurus, updateGuru, triggerAlert }) => {
             const listKepsek = useMemo(() => gurus.filter(g => g.role === 'kepsek'), [gurus]);
 
             const [nip, setNip] = useState('');
@@ -1119,7 +1139,7 @@
                 try {
                     if (editingId) {
                         await updateGuru(editingId, payload);
-                        alert("Data Kepala Sekolah Berhasil Diperbarui!");
+                        triggerAlert("Akun Diperbarui", "Data Kepala Sekolah Berhasil Diperbarui!");
                     }
                 } catch (err) {
                     console.error(err);
@@ -1127,7 +1147,7 @@
             };
 
             return (
-                <div className="max-w-xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                <div className="max-w-xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 animate-in fade-in duration-200">
                     <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
                         <IconLock />
                         <span>Kelola Akun Kepala Sekolah</span>
@@ -1160,7 +1180,7 @@
             );
         };
 
-        const ViewKelolaAdmin = ({ gurus, updateGuru, loggedInUser }) => {
+        const ViewKelolaAdmin = ({ gurus, updateGuru, loggedInUser, triggerAlert }) => {
             const currentAdmin = useMemo(() => gurus.find(g => g.role === 'admin' && g.id === loggedInUser.id) || loggedInUser, [gurus, loggedInUser]);
 
             const [nip, setNip] = useState('');
@@ -1189,14 +1209,14 @@
 
                 try {
                     await updateGuru(currentAdmin.id, payload);
-                    alert("Akun Administrator Berhasil Diperbarui!");
+                    triggerAlert("Admin Diperbarui", "Akun Administrator Berhasil Diperbarui!");
                 } catch (err) {
                     console.error(err);
                 }
             };
 
             return (
-                <div className="max-w-xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                <div className="max-w-xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 animate-in fade-in duration-200">
                     <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
                         <IconLock />
                         <span>Pengaturan Akun Administrator</span>
@@ -1223,14 +1243,13 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Dashboard Guru ---
         const ViewDashboard = ({ journals, students, changeView }) => {
             const today = new Date().toISOString().split('T')[0];
             const journalsToday = journals.filter(j => j.tanggal === today).length;
             const classesCount = new Set(students.map(s => s.kelas)).size;
 
             return (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-in fade-in duration-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <StatCard title="Total Siswa Terdaftar" value={students.length} color="indigo" icon={<IconUsers/>} onClick={() => changeView('siswa')} />
                         <StatCard title="Total Rombel / Kelas" value={classesCount} color="sky" icon={<IconBook/>} onClick={() => changeView('siswa')} />
@@ -1286,7 +1305,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Dashboard Kepsek ---
         const ViewDashboardKepsek = ({ journals, students, changeView }) => {
             const today = new Date().toISOString().split('T')[0];
             const journalsToday = journals.filter(j => j.tanggal === today).length;
@@ -1294,7 +1312,7 @@
             const classesCount = new Set(students.map(s => s.kelas)).size;
 
             return (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-in fade-in duration-200">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <StatCard title="Total Guru Aktif" value={uniqueTeachers || 0} color="indigo" icon={<IconUsers/>} onClick={() => changeView('monitoring_jurnal')} />
                         <StatCard title="Total Siswa" value={students.length} color="sky" icon={<IconUsers/>} onClick={() => {}} />
@@ -1383,88 +1401,345 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Data Siswa (Guru) ---
-        const ViewDataSiswa = ({ students, addStudent, deleteStudent }) => {
+        const ViewDataSiswa = ({ students, addStudent, updateStudent, addStudentsBulk, deleteStudent, deleteStudentsBulk, triggerAlert, triggerConfirm }) => {
+            const [activeFormTab, setActiveFormTab] = useState('single'); // single or bulk
             const [nama, setNama] = useState('');
             const [nis, setNis] = useState('');
             const [kelas, setKelas] = useState('');
+            const [bulkText, setBulkText] = useState('');
             const [isSubmitting, setIsSubmitting] = useState(false);
 
-            const handleAdd = async (e) => {
+            // States untuk fitur Edit, Filter, dan Hapus Massal
+            const [editingId, setEditingId] = useState(null);
+            const [filterKelas, setFilterKelas] = useState('Semua');
+            const [searchQuery, setSearchQuery] = useState('');
+            const [selectedSiswaIds, setSelectedSiswaIds] = useState([]);
+
+            const availableClasses = useMemo(() => {
+                return ['Semua', ...new Set(students.map(s => s.kelas))].sort();
+            }, [students]);
+
+            const filteredStudents = useMemo(() => {
+                return students.filter(s => {
+                    const matchesClass = filterKelas === 'Semua' || s.kelas === filterKelas;
+                    const matchesSearch = s.nama.toLowerCase().includes(searchQuery.toLowerCase()) || s.nis.includes(searchQuery);
+                    return matchesClass && matchesSearch;
+                });
+            }, [students, filterKelas, searchQuery]);
+
+            const handleAddOrUpdate = async (e) => {
                 e.preventDefault();
-                if(!nama || !nis || !kelas) return;
+                if(!nama.trim() || !nis.trim() || !kelas.trim()) return;
                 setIsSubmitting(true);
                 try {
-                    await addStudent({
-                        nama, 
-                        nis, 
+                    const studentPayload = {
+                        nama: nama.trim(),
+                        nis: nis.trim(),
                         kelas: kelas.trim().toUpperCase()
-                    });
-                    setNama(''); 
-                    setNis('');
+                    };
+
+                    if (editingId) {
+                        await updateStudent(editingId, studentPayload);
+                        setEditingId(null);
+                        setNama('');
+                        setNis('');
+                        setKelas('');
+                        triggerAlert("Berhasil", "Data siswa berhasil diperbarui!");
+                    } else {
+                        const exist = students.find(s => s.nis === studentPayload.nis);
+                        if (exist) {
+                            triggerAlert("Peringatan", "Siswa dengan NIS tersebut sudah terdaftar di sistem!");
+                            setIsSubmitting(false);
+                            return;
+                        }
+                        await addStudent(studentPayload);
+                        setNama(''); 
+                        setNis('');
+                        setKelas('');
+                        triggerAlert("Siswa Ditambahkan", "Data siswa berhasil dimasukkan!");
+                    }
                 } catch (error) {
                     console.error(error);
                 }
                 setIsSubmitting(false);
             };
 
+            const handleBulkImport = async (e) => {
+                e.preventDefault();
+                if(!bulkText.trim()) return;
+                setIsSubmitting(true);
+
+                const lines = bulkText.split('\n');
+                const studentList = [];
+                let failedCount = 0;
+
+                for (let line of lines) {
+                    if (!line.trim()) continue;
+                    const cols = line.split('\t');
+                    if (cols.length >= 3) {
+                        studentList.push({
+                            nis: cols[0].trim(),
+                            nama: cols[1].trim(),
+                            kelas: cols[2].trim().toUpperCase()
+                        });
+                    } else {
+                        failedCount++;
+                    }
+                }
+
+                if (studentList.length > 0) {
+                    try {
+                        await addStudentsBulk(studentList);
+                        setBulkText('');
+                        triggerAlert("Bulk Import Sukses", `Berhasil memasukkan ${studentList.length} siswa! ${failedCount > 0 ? failedCount + ' baris gagal diproses.' : ''}`);
+                    } catch (error) {
+                        console.error(error);
+                        triggerAlert("Error", "Gagal melakukan import massal data siswa.");
+                    }
+                } else {
+                    triggerAlert("Import Gagal", "Format data tidak valid. Gunakan format tabel Excel (NIS, Nama, Kelas) dipisahkan oleh Tab.");
+                }
+                setIsSubmitting(false);
+            };
+
+            const startEdit = (siswa) => {
+                setEditingId(siswa.id);
+                setNama(siswa.nama);
+                setNis(siswa.nis);
+                setKelas(siswa.kelas);
+                setActiveFormTab('single');
+            };
+
+            const cancelEdit = () => {
+                setEditingId(null);
+                setNama('');
+                setNis('');
+                setKelas('');
+            };
+
+            const handleSelectSiswa = (id) => {
+                setSelectedSiswaIds(prev => 
+                    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+                );
+            };
+
+            const handleSelectAllFiltered = () => {
+                const filteredIds = filteredStudents.map(s => s.id);
+                const allSelected = filteredIds.every(id => selectedSiswaIds.includes(id));
+                if (allSelected) {
+                    setSelectedSiswaIds(prev => prev.filter(id => !filteredIds.includes(id)));
+                } else {
+                    setSelectedSiswaIds(prev => [...new Set([...prev, ...filteredIds])]);
+                }
+            };
+
+            const handleDeleteSelected = () => {
+                if (selectedSiswaIds.length === 0) return;
+                triggerConfirm(
+                    "Hapus Massal Siswa",
+                    `Apakah Anda yakin ingin menghapus ${selectedSiswaIds.length} siswa terpilih secara permanen?`,
+                    async () => {
+                        await deleteStudentsBulk(selectedSiswaIds);
+                        setSelectedSiswaIds([]);
+                        triggerAlert("Sukses", "Data siswa terpilih berhasil dihapus.");
+                    }
+                );
+            };
+
+            const handleDeleteClass = () => {
+                if (filterKelas === 'Semua') return;
+                const classStudents = students.filter(s => s.kelas === filterKelas);
+                if (classStudents.length === 0) return;
+                triggerConfirm(
+                    "Hapus Satu Kelas",
+                    `Apakah Anda yakin ingin menghapus SELURUH siswa kelas ${filterKelas} (${classStudents.length} siswa) secara permanen?`,
+                    async () => {
+                        const idsToDelete = classStudents.map(s => s.id);
+                        await deleteStudentsBulk(idsToDelete);
+                        setSelectedSiswaIds([]);
+                        triggerAlert("Sukses", `Seluruh siswa kelas ${filterKelas} berhasil dihapus.`);
+                    }
+                );
+            };
+
+            const handleDeleteSingle = (siswa) => {
+                triggerConfirm(
+                    "Hapus Siswa",
+                    `Apakah Anda yakin ingin menghapus siswa ${siswa.nama} (NIS: ${siswa.nis}) secara permanen?`,
+                    async () => {
+                        await deleteStudent(siswa.id);
+                        setSelectedSiswaIds(prev => prev.filter(id => id !== siswa.id));
+                        triggerAlert("Sukses", "Siswa berhasil dihapus.");
+                    }
+                );
+            };
+
             return (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-200">
+                    {/* Panel Kiri (Form Input) */}
                     <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 h-fit">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
-                            <span className="text-indigo-600 text-xl font-bold">+</span>
-                            <span>Tambah Siswa Baru</span>
-                        </h3>
-                        <form onSubmit={handleAdd} className="space-y-5">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nomor Induk Siswa (NIS)</label>
-                                <input type="text" required placeholder="Contoh: 24011" value={nis} onChange={e=>setNis(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Lengkap Siswa</label>
-                                <input type="text" required placeholder="Contoh: Adelia Pratiwi" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Rombel / Kelas</label>
-                                <input type="text" required placeholder="Contoh: XI-A" value={kelas} onChange={e=>setKelas(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm uppercase" />
-                            </div>
-                            <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 disabled:opacity-50 text-sm shadow-md shadow-indigo-600/10">
-                                {isSubmitting ? 'Sedang Menyimpan...' : 'Masukkan Data Siswa'}
+                        <div className="flex border-b border-slate-100 mb-6">
+                            <button 
+                                onClick={() => setActiveFormTab('single')}
+                                className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition ${activeFormTab === 'single' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                {editingId ? 'Edit Siswa' : 'Tambah Satu'}
                             </button>
-                        </form>
+                            {!editingId && (
+                                <button 
+                                    onClick={() => setActiveFormTab('bulk')}
+                                    className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition ${activeFormTab === 'bulk' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    Import Massal
+                                </button>
+                            )}
+                        </div>
+
+                        {activeFormTab === 'single' ? (
+                            <form onSubmit={handleAddOrUpdate} className="space-y-5">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nomor Induk Siswa (NIS)</label>
+                                    <input type="text" required placeholder="Contoh: 24011" value={nis} onChange={e=>setNis(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Lengkap Siswa</label>
+                                    <input type="text" required placeholder="Contoh: Adelia Pratiwi" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Rombel / Kelas</label>
+                                    <input type="text" required placeholder="Contoh: XI-A" value={kelas} onChange={e=>setKelas(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm uppercase" />
+                                </div>
+                                <div className="flex space-x-2">
+                                    {editingId && (
+                                        <button type="button" onClick={cancelEdit} className="w-1/2 bg-slate-100 text-slate-600 font-semibold py-3 rounded-xl hover:bg-slate-200 transition text-sm">
+                                            Batal
+                                        </button>
+                                    )}
+                                    <button type="submit" disabled={isSubmitting} className={`font-semibold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 disabled:opacity-50 text-sm shadow-md shadow-indigo-600/10 ${editingId ? 'w-1/2 bg-indigo-600 text-white' : 'w-full bg-indigo-600 text-white'}`}>
+                                        {isSubmitting ? 'Sedang Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Masukkan Data Siswa'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleBulkImport} className="space-y-5">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Salin Data dari Excel (NIS &rarr; Nama &rarr; Kelas)</label>
+                                    <textarea 
+                                        required 
+                                        rows="10" 
+                                        placeholder="24011&#9;Adelia Pratiwi&#9;XI-A&#10;24012&#9;Budi Nugraha&#9;XI-A"
+                                        value={bulkText} 
+                                        onChange={e=>setBulkText(e.target.value)} 
+                                        className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm font-mono whitespace-pre resize-none"
+                                    ></textarea>
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-relaxed">
+                                    * Tips: Di Excel, buat 3 kolom yaitu NIS, Nama, Kelas. Salin dan tempelkan langsung ke kolom teks di atas.
+                                </p>
+                                <button type="submit" disabled={isSubmitting} className="w-full bg-indigo-600 text-white font-semibold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 disabled:opacity-50 text-sm shadow-md shadow-indigo-600/10">
+                                    {isSubmitting ? 'Memproses Import...' : 'Proses Import Massal'}
+                                </button>
+                            </form>
+                        )}
                     </div>
 
+                    {/* Panel Kanan (Daftar Siswa dengan Fitur Filter, Edit & Hapus Massal) */}
                     <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3">
-                            Daftar Seluruh Murid Terdaftar ({students.length})
-                        </h3>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Daftar Siswa Terdaftar ({filteredStudents.length})
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <select 
+                                    value={filterKelas} 
+                                    onChange={e => { setFilterKelas(e.target.value); setSelectedSiswaIds([]); }}
+                                    className="p-2 text-xs border border-slate-200 rounded-xl font-semibold outline-none bg-slate-50 text-slate-700"
+                                >
+                                    {availableClasses.map(c => <option key={c} value={c}>{c === 'Semua' ? 'Semua Kelas' : `Kelas: ${c}`}</option>)}
+                                </select>
+                                <input 
+                                    type="text" 
+                                    placeholder="Cari nama / NIS..." 
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    className="p-2 text-xs border border-slate-200 rounded-xl outline-none bg-slate-50 text-slate-700 w-36 sm:w-48"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Floating Action Bar untuk Aksi Massal */}
+                        {selectedSiswaIds.length > 0 && (
+                            <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between mb-4 animate-in fade-in slide-in-from-top-4 duration-150">
+                                <span className="text-xs font-bold text-indigo-800">
+                                    {selectedSiswaIds.length} Siswa Terpilih
+                                </span>
+                                <button 
+                                    onClick={handleDeleteSelected}
+                                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-md shadow-rose-600/15"
+                                >
+                                    Hapus Terpilih
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Aksi Hapus Satu Kelas penuh */}
+                        {filterKelas !== 'Semua' && filteredStudents.length > 0 && (
+                            <div className="flex justify-end mb-4">
+                                <button 
+                                    onClick={handleDeleteClass}
+                                    className="px-3 py-1.5 border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition"
+                                >
+                                    Hapus Seluruh Kelas {filterKelas}
+                                </button>
+                            </div>
+                        )}
+
                         <div className="overflow-y-auto max-h-[60vh] rounded-xl border border-slate-100">
                             <table className="w-full text-left border-collapse text-sm">
-                                <thead className="sticky top-0 bg-slate-50 font-semibold z-10 border-b border-slate-100">
+                                <head className="sticky top-0 bg-slate-50 font-semibold z-10 border-b border-slate-100">
                                     <tr className="text-slate-500">
+                                        <th className="p-4 w-12 text-center">
+                                            <input 
+                                                type="checkbox"
+                                                checked={filteredStudents.length > 0 && filteredStudents.every(s => selectedSiswaIds.includes(s.id))}
+                                                onChange={handleSelectAllFiltered}
+                                                className="w-4 h-4 cursor-pointer accent-indigo-600"
+                                            />
+                                        </th>
                                         <th className="p-4">Kelas</th>
                                         <th className="p-4">NIS</th>
                                         <th className="p-4">Nama Lengkap</th>
-                                        <th className="p-4 text-center">Hapus</th>
+                                        <th className="p-4 text-center">Tindakan</th>
                                     </tr>
-                                </thead>
+                                </head>
                                 <tbody className="divide-y divide-slate-100">
-                                    {students.map(s => (
-                                        <tr key={s.id} className="border-b hover:bg-slate-50/30 transition">
+                                    {filteredStudents.map(s => (
+                                        <tr key={s.id} className={`border-b hover:bg-slate-50/30 transition ${selectedSiswaIds.includes(s.id) ? 'bg-indigo-50/30' : ''}`}>
+                                            <td className="p-4 text-center">
+                                                <input 
+                                                    type="checkbox"
+                                                    checked={selectedSiswaIds.includes(s.id)}
+                                                    onChange={() => handleSelectSiswa(s.id)}
+                                                    className="w-4 h-4 cursor-pointer accent-indigo-600"
+                                                />
+                                            </td>
                                             <td className="p-4"><span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700">{s.kelas}</span></td>
                                             <td className="p-4 text-slate-600 font-mono text-xs">{s.nis}</td>
                                             <td className="p-4 text-slate-800 font-medium">{s.nama}</td>
-                                            <td className="p-4 text-center">
-                                                <button onClick={() => deleteStudent(s.id)} className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Siswa">
+                                            <td className="p-4 text-center space-x-2 whitespace-nowrap">
+                                                <button onClick={() => startEdit(s)} className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
+                                                    Ubah
+                                                </button>
+                                                <button onClick={() => handleDeleteSingle(s)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Siswa">
                                                     <IconTrash />
                                                 </button>
                                             </td>
                                         </tr>
                                     ))}
-                                    {students.length === 0 && (
+                                    {filteredStudents.length === 0 && (
                                         <tr>
-                                            <td colSpan="4" className="p-12 text-center text-slate-400">
-                                                Belum ada data siswa di database.
+                                            <td colSpan="5" className="p-12 text-center text-slate-400">
+                                                Tidak menemukan data siswa yang sesuai.
                                             </td>
                                         </tr>
                                     )}
@@ -1476,12 +1751,13 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Isi Jurnal (Guru) ---
         const ViewIsiJurnal = ({ students, addJournal, onSuccess, triggerAlert }) => {
             const [tanggal, setTanggal] = useState(new Date().toISOString().split('T')[0]);
             const [kelasTerpilih, setKelasTerpilih] = useState('');
             const [mapel, setMapel] = useState('');
             const [materi, setMateri] = useState('');
+            const [jumlahJam, setJumlahJam] = useState('');
+            const [guruPengganti, setGuruPengganti] = useState('');
             const [catatan, setCatatan] = useState('');
             const [absensi, setAbsensi] = useState({});
             const [fotoBase64, setFotoBase64] = useState(null);
@@ -1560,6 +1836,8 @@
                     kelas: kelasTerpilih,
                     mapel,
                     materi,
+                    jumlah_jam: jumlahJam,
+                    guru_pengganti: guruPengganti.trim(),
                     catatan,
                     fotoUrl: fotoBase64 || "https://placehold.co/800x450/e2e8f0/64748b?text=Tidak+Ada+Dokumentasi+KBM",
                     waktu_input: new Date().toISOString(),
@@ -1577,7 +1855,7 @@
             };
 
             return (
-                <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 max-w-5xl mx-auto">
+                <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 max-w-5xl mx-auto animate-in fade-in duration-200">
                     <div className="border-b border-slate-100 pb-4 mb-6">
                         <h2 className="text-xl font-bold text-slate-900">Form Jurnal Mengajar Terintegrasi</h2>
                         <p className="text-xs text-slate-500 mt-1">Pengisian lembar jurnal KBM sekaligus mengabsen seluruh murid</p>
@@ -1585,6 +1863,7 @@
                     
                     <form onSubmit={handleSubmit} className="space-y-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                            {}
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Tanggal Pertemuan</label>
                                 <input type="date" required value={tanggal} onChange={e=>setTanggal(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white text-sm" />
@@ -1603,6 +1882,15 @@
                             <div>
                                 <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Pokok Bahasan / Materi</label>
                                 <input type="text" required placeholder="Contoh: Hukum Newton 1, 2, dan 3" value={materi} onChange={e=>setMateri(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                            </div>
+                            {}
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Jumlah Jam Pelajaran (JP)</label>
+                                <input type="number" required min="1" placeholder="Contoh: 2" value={jumlahJam} onChange={e=>setJumlahJam(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Guru Pengganti (Opsional)</label>
+                                <input type="text" placeholder="Nama Guru Pengganti (Kosongkan jika tidak ada)" value={guruPengganti} onChange={e=>setGuruPengganti(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                             </div>
                         </div>
 
@@ -1675,7 +1963,7 @@
                                         <>
                                             <IconImage className="mx-auto text-slate-300 mb-2" />
                                             <p className="text-xs text-slate-400 mb-1">Unggah dokumentasi kelas (.jpg, .png)</p>
-                                            <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+                                            <input type="file" accept="image/*;capture=camera" onChange={handleImageUpload} className="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
                                         </>
                                     )}
                                 </div>
@@ -1684,7 +1972,7 @@
 
                         <div className="pt-6 border-t border-slate-100">
                             <button type="submit" disabled={isSubmitting || !kelasTerpilih || studentsInClass.length === 0} className="w-full py-4 bg-indigo-600 text-white text-base font-bold rounded-2xl shadow-xl shadow-indigo-600/10 hover:bg-indigo-700 transition duration-150 disabled:opacity-50">
-                                {isSubmitting ? 'Menyimpan Semua Data...' : 'Simpan Jurnal dan Absensi Kelas'}
+                                {isSubmitting ? 'Menyimpan Semua Data...' : 'Simpan Jurnal &amp; Absensi Kelas'}
                             </button>
                         </div>
                     </form>
@@ -1692,7 +1980,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Riwayat Jurnal (Guru) ---
         const ViewRiwayat = ({ journals, deleteJournal }) => {
             const [selectedJournal, setSelectedJournal] = useState(null);
 
@@ -1701,7 +1988,7 @@
             }
 
             return (
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-hidden">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-hidden animate-in fade-in duration-200">
                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/75 flex justify-between items-center">
                         <h2 className="text-base font-bold text-slate-800">Riwayat Jurnal KBM Guru</h2>
                     </div>
@@ -1743,7 +2030,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Monitoring Jurnal (Kepsek) ---
         const ViewMonitoringJurnal = ({ journals, deleteJournal }) => {
             const [selectedJournal, setSelectedJournal] = useState(null);
 
@@ -1752,7 +2038,7 @@
             }
 
             return (
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-hidden">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-hidden animate-in fade-in duration-200">
                     <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/75 flex justify-between items-center">
                         <h2 className="text-base font-bold text-slate-800">Pemantauan Jurnal Guru Terdaftar</h2>
                     </div>
@@ -1790,10 +2076,9 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Detail Jurnal ---
         const ViewDetailJurnal = ({ journal, onClose, deleteJournal, showDeleteBtn }) => {
             return (
-                <div className="max-w-4xl mx-auto relative print-block">
+                <div className="max-w-4xl mx-auto relative print-block animate-in fade-in duration-200">
                     <div className="hidden print-block text-center border-b-2 border-slate-900 pb-5 mb-8">
                         <h1 className="text-xl font-bold uppercase text-slate-900 leading-tight">PEMERINTAH PROVINSI SULAWESI SELATAN</h1>
                         <h2 className="text-lg font-black uppercase text-slate-900 mt-1">SMK NEGERI 3 SELAYAR</h2>
@@ -1802,7 +2087,7 @@
                     </div>
 
                     <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 print:border-none print:shadow-none print:p-0">
-                        <div className="flex justify-between items-start mb-6 border-b border-slate-100 pb-4 print-hidden">
+                        <div className="flex justify-between items-start mb-6 print-hidden">
                             <div>
                                 <h2 className="text-xl font-bold text-slate-900">Lembar Jurnal Mengajar</h2>
                                 <p className="text-xs text-slate-500">Guru Pengajar: {journal.guru_nama}</p>
@@ -1820,11 +2105,14 @@
                             </div>
                         </div>
 
+                        {}
                         <div className="grid grid-cols-2 gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-8 text-sm">
                             <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Guru Pengajar</span> <p className="text-slate-800 font-bold">{journal.guru_nama}</p></div>
                             <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Tanggal KBM</span> <p className="text-slate-800 font-medium">{journal.tanggal}</p></div>
                             <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Kelas / Rombel</span> <p className="text-slate-800 font-bold text-indigo-600">{journal.kelas}</p></div>
                             <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Mata Pelajaran</span> <p className="text-slate-800 font-medium">{journal.mapel}</p></div>
+                            <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Jumlah Jam Pelajaran</span> <p className="text-slate-800 font-semibold">{journal.jumlah_jam ? `${journal.jumlah_jam} JP` : '-'}</p></div>
+                            <div><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Guru Pengganti</span> <p className="text-slate-800 font-medium">{journal.guru_pengganti || 'Tidak Ada (Mengajar Mandiri)'}</p></div>
                             <div className="col-span-2"><span className="font-bold text-slate-400 block text-[10px] uppercase tracking-wider mb-0.5">Pokok Bahasan / Materi</span> <p className="text-slate-800 font-semibold text-base">{journal.materi}</p></div>
                         </div>
 
@@ -1871,7 +2159,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Membangun komponen Rekapitulasi (Guru &amp; Kepsek) ---
         const ViewRekap = ({ journals, students, loggedInUser }) => {
             const [filterKelas, setFilterKelas] = useState('');
             const [filterBulan, setFilterBulan] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -1924,7 +2211,7 @@
             }, [journals, filterKelas, filterBulan]);
 
             return (
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-block print:border-none print:shadow-none print:p-0">
+                <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden print-block print:border-none print:shadow-none print:p-0 animate-in fade-in duration-200">
                     
                     <div className="print-hidden border-b border-slate-100 flex flex-wrap bg-slate-50/50 justify-between items-center px-6">
                         <div className="flex space-x-1 py-3">
@@ -2020,12 +2307,15 @@
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto print:overflow-visible">
+                                    {}
                                     <table className="w-full text-xs border-collapse border border-slate-300">
                                         <thead className="bg-slate-100 text-slate-800 font-semibold">
                                             <tr>
                                                 <th className="border border-slate-300 p-3 text-center w-12">No</th>
                                                 <th className="border border-slate-300 p-3 text-left w-28">Tanggal</th>
-                                                <th className="border border-slate-300 p-3 text-left w-48">Mata Pelajaran</th>
+                                                <th className="border border-slate-300 p-3 text-left w-40">Mata Pelajaran</th>
+                                                <th className="border border-slate-300 p-3 text-center w-16">JP</th>
+                                                <th className="border border-slate-300 p-3 text-left w-48">Guru Pengganti</th>
                                                 <th className="border border-slate-300 p-3 text-left">Materi Pembahasan KBM</th>
                                                 <th className="border border-slate-300 p-3 text-left">Hambatan / Catatan Guru</th>
                                             </tr>
@@ -2036,13 +2326,15 @@
                                                     <td className="border border-slate-300 p-3 text-center align-top text-slate-400">{idx + 1}</td>
                                                     <td className="border border-slate-300 p-3 font-semibold text-slate-800 align-top whitespace-nowrap">{j.tanggal}</td>
                                                     <td className="border border-slate-300 p-3 font-medium text-slate-700 align-top">{j.mapel}</td>
+                                                    <td className="border border-slate-300 p-3 text-center align-top font-bold text-indigo-700">{j.jumlah_jam || '-'}</td>
+                                                    <td className="border border-slate-300 p-3 text-slate-700 align-top">{j.guru_pengganti || '-'}</td>
                                                     <td className="border border-slate-300 p-3 text-slate-800 align-top">{j.materi}</td>
                                                     <td className="border border-slate-300 p-3 text-slate-500 align-top whitespace-pre-wrap">{j.catatan || '-'}</td>
                                                 </tr>
                                             ))}
                                             {journalsRecap.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="5" className="border border-slate-300 p-8 text-center text-slate-400 bg-slate-50">
+                                                    <td colSpan="7" className="border border-slate-300 p-8 text-center text-slate-400 bg-slate-50">
                                                         Belum ada log jurnal mengajar pada rombel ini.
                                                     </td>
                                                 </tr>
@@ -2079,7 +2371,6 @@
             );
         };
 
-        // --- STREAMING_CHUNK:Merender komponen root React ---
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
