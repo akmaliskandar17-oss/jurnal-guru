@@ -323,7 +323,7 @@
                         if (match) {
                             onLoginSuccess(match);
                         } else {
-                            setError(`NIP/Username atau password salah!`);
+                            setError(`NIP atau password salah!`);
                         }
                     } else {
                         const { getFirestore, collection, query, where, getDocs } = window.firebaseFirestoreSDK;
@@ -358,14 +358,14 @@
                             <div className="w-16 h-16 bg-indigo-600/30 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
                                 <svg className="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                             </div>
-                            <h2 className="text-2xl font-black tracking-tight uppercase">E-Jurnal Terpadu</h2>
+                            <h2 className="text-2xl font-black tracking-tight uppercase">E-Jurnal Guru</h2>
                             <p className="text-slate-300 text-xs mt-1">Sistem Jurnal &amp; Monitoring Terintegrasi</p>
                         </div>
 
                         <div className="mb-4 text-center">
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${firebaseActive ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${firebaseActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-                                {firebaseActive ? 'Terhubung Cloud Firestore' : 'Mode Simulasi Aktif'}
+                                {firebaseActive ? 'Online' : 'Mode Simulasi Aktif'}
                             </span>
                         </div>
 
@@ -398,11 +398,11 @@
 
                         <form onSubmit={handleLogin} className="space-y-4">
                             <div>
-                                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">NIP / Username</label>
+                                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">NIP</label>
                                 <input 
                                     type="text" 
                                     required 
-                                    placeholder={activeRoleTab === 'admin' ? "admin" : "NIP/Username"} 
+                                    placeholder={activeRoleTab === 'admin' ? "admin" : "NIP"} 
                                     value={nip} 
                                     onChange={e => setNip(e.target.value)} 
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition placeholder-slate-500"
@@ -410,7 +410,7 @@
                             </div>
 
                             <div>
-                                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">Kata Sandi</label>
+                                <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-400 mb-1.5">Password</label>
                                 <input 
                                     type="password" 
                                     required 
@@ -426,13 +426,13 @@
                                 disabled={loading}
                                 className="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition duration-150 disabled:opacity-50 text-sm mt-2 shadow-lg shadow-indigo-600/30"
                             >
-                                {loading ? 'Memvalidasi...' : `Masuk Sebagai ${activeRoleTab.toUpperCase()}`}
+                                {loading ? 'Memvalidasi...' : `Login ${activeRoleTab.toUpperCase()}`}
                             </button>
                         </form>
                     </div>
 
                     <div className="mt-6 text-center text-xs text-slate-400/80 space-y-1">
-                        <p className="font-semibold tracking-wide">Versi Aplikasi: <span className="text-indigo-400">{appInfo.version}</span></p>
+                        <p className="font-semibold tracking-wide">Versi: <span className="text-indigo-400">{appInfo.version}</span></p>
                         <p>Pembuat: <span className="text-slate-300 font-medium">{appInfo.creator}</span></p>
                     </div>
                 </div>
@@ -779,8 +779,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Kata Sandi Akun</label>
-                                <input type="text" required placeholder="Kata Sandi Login" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Password Akun</label>
+                                <input type="text" required placeholder="Password Login" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                             </div>
                             <div className="flex space-x-2">
                                 {editingId && (
@@ -797,7 +797,7 @@
 
                     <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
                         <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3">
-                            Daftar Guru Pengajar ({listGuru.length})
+                            Daftar Guru ({listGuru.length})
                         </h3>
                         <div className="overflow-y-auto max-h-[60vh] rounded-xl border border-slate-100">
                             <table className="w-full text-left border-collapse text-sm">
@@ -806,8 +806,8 @@
                                         <th className="p-4">NIP</th>
                                         <th className="p-4">Nama Guru</th>
                                         <th className="p-4">Mata Pelajaran</th>
-                                        <th className="p-4">Sandi</th>
-                                        <th className="p-4 text-center">Tindakan</th>
+                                        <th className="p-4">Password</th>
+                                        <th className="p-4 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -819,7 +819,7 @@
                                             <td className="p-4 text-slate-500 font-mono text-xs">{g.password}</td>
                                             <td className="p-4 text-center space-x-2 font-semibold">
                                                 <button onClick={() => handleEditClick(g)} className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
-                                                    Ubah
+                                                    Edit
                                                 </button>
                                                 <button onClick={() => deleteGuru(g.id)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Akun">
                                                     <IconTrash />
@@ -898,7 +898,7 @@
                                 <thead className="sticky top-0 bg-slate-50 font-semibold z-10 border-b border-slate-100">
                                     <tr className="text-slate-500">
                                         <th className="p-4">Nama Kelas</th>
-                                        <th className="p-4 text-center">Tindakan</th>
+                                        <th className="p-4 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -946,7 +946,7 @@
                                 <thead className="sticky top-0 bg-slate-50 font-semibold z-10 border-b border-slate-100">
                                     <tr className="text-slate-500">
                                         <th className="p-4">Nama Mata Pelajaran</th>
-                                        <th className="p-4 text-center">Tindakan</th>
+                                        <th className="p-4 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -1002,7 +1002,7 @@
                 <div className="max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 animate-in fade-in duration-200">
                     <h3 className="text-lg font-bold text-slate-900 mb-6 border-b border-slate-100 pb-3 flex items-center space-x-2">
                         <IconPrint />
-                        <span>Pengaturan Kop Cetak Resmi</span>
+                        <span>Pengaturan Kop Cetak</span>
                     </h3>
                     
                     <form onSubmit={handleSave} className="space-y-5">
@@ -1095,11 +1095,11 @@
                                 <input type="text" required placeholder="Nama Lengkap Kepala Sekolah" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Kata Sandi Akun</label>
-                                <input type="text" required placeholder="Kata Sandi Login" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Password Akun</label>
+                                <input type="text" required placeholder="Password Login" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                             </div>
                             <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition duration-150 text-sm shadow-lg shadow-indigo-600/20">
-                                Perbarui Akun Kepala Sekolah
+                                Edit Akun Kepsek
                             </button>
                         </form>
                     ) : (
@@ -1163,11 +1163,11 @@
                             <input type="text" required placeholder="Nama Lengkap Admin" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Kata Sandi Baru</label>
-                            <input type="text" required placeholder="Kata Sandi Baru" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
+                            <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Password Baru</label>
+                            <input type="text" required placeholder="Password Baru" value={password} onChange={e=>setPassword(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                         </div>
                         <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl hover:bg-indigo-700 transition duration-150 text-sm shadow-lg shadow-indigo-600/20">
-                            Perbarui Akun Admin
+                            Edit Akun Admin
                         </button>
                     </form>
                 </div>
@@ -1305,7 +1305,7 @@
                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Kehadiran</p>
                                     </div>
                                 </div>
-                                <p className="text-xs text-slate-500 leading-relaxed px-4">Rata-rata persentase kehadiran murid di seluruh kelas bulan ini mencapai 85%.</p>
+                                <p className="text-xs text-slate-500 leading-relaxed px-4">Rata-rata persentase kehadiran siswa di seluruh kelas bulan ini mencapai 85%.</p>
                             </div>
                         </div>
                     </div>
@@ -1515,7 +1515,7 @@
                                 onClick={() => setActiveFormTab('single')}
                                 className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition ${activeFormTab === 'single' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                             >
-                                {editingId ? 'Edit Siswa' : 'Tambah Satu'}
+                                {editingId ? 'Edit Siswa' : 'Input Siswa'}
                             </button>
                             {!editingId && (
                                 <button 
@@ -1534,11 +1534,11 @@
                                     <input type="text" required placeholder="Contoh: 24011" value={nis} onChange={e=>setNis(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Lengkap Siswa</label>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Nama Siswa</label>
                                     <input type="text" required placeholder="Contoh: Adelia Pratiwi" value={nama} onChange={e=>setNama(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Rombel / Kelas</label>
+                                    <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Kelas</label>
                                     <select required value={kelas} onChange={e=>setKelas(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition text-sm bg-white">
                                         <option value="">-- Pilih Kelas --</option>
                                         {classes.map(c => <option key={c.id} value={c.nama}>{c.nama}</option>)}
@@ -1551,7 +1551,7 @@
                                         </button>
                                     )}
                                     <button type="submit" disabled={isSubmitting} className={`font-semibold py-3 rounded-xl hover:bg-indigo-700 transition duration-150 disabled:opacity-50 text-sm shadow-md shadow-indigo-600/10 ${editingId ? 'w-1/2 bg-indigo-600 text-white' : 'w-full bg-indigo-600 text-white'}`}>
-                                        {isSubmitting ? 'Sedang Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Masukkan Data Siswa'}
+                                        {isSubmitting ? 'Sedang Menyimpan...' : editingId ? 'Simpan Perubahan' : 'Input Siswa'}
                                     </button>
                                 </div>
                             </form>
@@ -1581,7 +1581,7 @@
                     <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
                             <h3 className="text-lg font-bold text-slate-900">
-                                Daftar Siswa Terdaftar ({filteredStudents.length})
+                                Daftar Siswa ({filteredStudents.length})
                             </h3>
                             <div className="flex flex-wrap items-center gap-2">
                                 <select 
@@ -1641,7 +1641,7 @@
                                         <th className="p-4">Kelas</th>
                                         <th className="p-4">NIS</th>
                                         <th className="p-4">Nama Lengkap</th>
-                                        <th className="p-4 text-center">Tindakan</th>
+                                        <th className="p-4 text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -1660,7 +1660,7 @@
                                             <td className="p-4 text-slate-800 font-medium">{s.nama}</td>
                                             <td className="p-4 text-center space-x-2 whitespace-nowrap font-semibold">
                                                 <button onClick={() => startEdit(s)} className="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition">
-                                                    Ubah
+                                                    Edit
                                                 </button>
                                                 <button onClick={() => handleDeleteSingle(s)} className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition" title="Hapus Siswa">
                                                     <IconTrash />
@@ -1752,7 +1752,7 @@
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 if (!kelasTerpilih || studentsInClass.length === 0) {
-                    triggerAlert("Formulir Belum Lengkap", "Harap pilih kelas yang telah memiliki murid sebelum menyimpan jurnal!");
+                    triggerAlert("Formulir Belum Lengkap", "Harap pilih kelas yang telah memiliki siswa sebelum menyimpan jurnal!");
                     return;
                 }
                 
@@ -1793,7 +1793,7 @@
                 <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 max-w-5xl mx-auto animate-in fade-in duration-200">
                     <div className="border-b border-slate-100 pb-4 mb-6">
                         <h2 className="text-xl font-bold text-slate-900">Form Jurnal Mengajar Terintegrasi</h2>
-                        <p className="text-xs text-slate-500 mt-1">Pengisian lembar jurnal KBM sekaligus mengabsen seluruh murid</p>
+                        <p className="text-xs text-slate-500 mt-1">Pengisian lembar jurnal KBM sekaligus mengabsen seluruh siswa</p>
                     </div>
                     
                     <form onSubmit={handleSubmit} className="space-y-8">
@@ -1821,11 +1821,11 @@
                                 <input type="text" required placeholder="Contoh: Hukum Newton 1, 2, dan 3" value={materi} onChange={e=>setMateri(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Jumlah Jam Pelajaran (JP)</label>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Jumlah JP</label>
                                 <input type="number" required min="1" placeholder="Contoh: 2" value={jumlahJam} onChange={e=>setJumlahJam(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Guru Pengganti (Opsional)</label>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Guru Pengganti</label>
                                 <input type="text" placeholder="Nama Guru Pengganti (Kosongkan jika tidak ada)" value={guruPengganti} onChange={e=>setGuruPengganti(e.target.value)} className="w-full p-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none text-sm" />
                             </div>
                         </div>
@@ -1886,7 +1886,7 @@
                                 <textarea rows="5" value={catatan} onChange={e=>setCatatan(e.target.value)} className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none text-sm placeholder-slate-300" placeholder="Hambatan pembelajaran hari ini..."></textarea>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Foto Dokumentasi KBM</label>
+                                <label className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-1.5">Dokumentasi KBM</label>
                                 <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:bg-slate-50 transition relative h-[142px] flex flex-col justify-center items-center">
                                     {fotoBase64 ? (
                                         <div className="relative">
@@ -1908,7 +1908,7 @@
 
                         <div className="pt-6 border-t border-slate-100">
                             <button type="submit" disabled={isSubmitting || !kelasTerpilih || studentsInClass.length === 0} className="w-full py-4 bg-indigo-600 text-white text-base font-bold rounded-2xl shadow-xl shadow-indigo-600/10 hover:bg-indigo-700 transition duration-150 disabled:opacity-50">
-                                {isSubmitting ? 'Menyimpan Semua Data...' : 'Simpan Jurnal &amp; Absensi Kelas'}
+                                {isSubmitting ? 'Menyimpan Semua Data...' : 'Simpan Jurnal & Absensi Kelas'}
                             </button>
                         </div>
                     </form>
@@ -1945,7 +1945,7 @@
                                     <th className="p-4">Mata Pelajaran</th>
                                     <th className="p-4">Pembahasan Materi</th>
                                     <th className="p-4 text-center">Kehadiran</th>
-                                    <th className="p-4 text-center">Tindakan</th>
+                                    <th className="p-4 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -2740,9 +2740,9 @@
                     </div>
 
                     <div className="flex border-b border-slate-100 mb-6 px-6 pt-4 print-hidden bg-white">
-                        <button onClick={() => setActiveSubTab('rekap')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'rekap' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Rata-Rata &amp; Rekap</button>
-                        <button onClick={() => setActiveSubTab('harian')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'harian' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Harian per Pertemuan</button>
-                        <button onClick={() => setActiveSubTab('tugas')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'tugas' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Tugas per Pertemuan</button>
+                        <button onClick={() => setActiveSubTab('rekap')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'rekap' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Rata-Rata</button>
+                        <button onClick={() => setActiveSubTab('harian')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'harian' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Harian</button>
+                        <button onClick={() => setActiveSubTab('tugas')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'tugas' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Tugas</button>
                         <button onClick={() => setActiveSubTab('ulangan')} className={`pb-3 px-4 text-xs font-bold uppercase tracking-wider transition-all duration-150 ${activeSubTab === 'ulangan' ? 'text-indigo-600 border-b-2 border-indigo-600 font-bold' : 'text-slate-400 hover:text-slate-600'}`}>Nilai Ulangan Harian</button>
                     </div>
 
@@ -2824,7 +2824,7 @@
                                                 )}
                                                 <th className="border border-slate-300 p-3 text-center w-10">No</th>
                                                 <th className="border border-slate-300 p-3 text-left w-32">NIS</th>
-                                                <th className="border border-slate-300 p-3 text-left">Nama Lengkap Siswa</th>
+                                                <th className="border border-slate-300 p-3 text-left">Nama Siswa</th>
                                                 <th className="border border-slate-300 p-3 text-center w-24">Rata Harian</th>
                                                 <th className="border border-slate-300 p-3 text-center w-24">Rata Tugas</th>
                                                 <th className="border border-slate-300 p-3 text-center w-24">Rata Ulangan</th>
@@ -2881,7 +2881,7 @@
                                             <tr className="bg-slate-100 text-slate-800 font-semibold">
                                                 <th className="border border-slate-300 p-3 text-center w-12">No</th>
                                                 <th className="border border-slate-300 p-3 text-left w-32">NIS</th>
-                                                <th className="border border-slate-300 p-3 text-left">Nama Lengkap Siswa</th>
+                                                <th className="border border-slate-300 p-3 text-left">Nama Siswa</th>
                                                 {selectedTypeMeetings.map(m => (
                                                     <th key={m.id} className="border border-slate-300 p-2 text-center relative group min-w-[120px] bg-indigo-50/30">
                                                         <div className="flex flex-col items-center justify-center">
@@ -3787,9 +3787,9 @@
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard Admin" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconUsers />} label="Kelola Akun Guru" isActive={currentView === 'kelola_guru'} onClick={() => setCurrentView('kelola_guru')} />
-                                    <MenuButton icon={<IconBook />} label="Referensi Kelas &amp; Mapel" isActive={currentView === 'kelola_referensi'} onClick={() => setCurrentView('kelola_referensi')} />
-                                    <MenuButton icon={<IconPrint />} label="Pengaturan Kop Cetak" isActive={currentView === 'kelola_kop'} onClick={() => setCurrentView('kelola_kop')} />
-                                    <MenuButton icon={<IconInfo />} label="Informasi Aplikasi" isActive={currentView === 'kelola_info'} onClick={() => setCurrentView('kelola_info')} />
+                                    <MenuButton icon={<IconBook />} label="Referensi" isActive={currentView === 'kelola_referensi'} onClick={() => setCurrentView('kelola_referensi')} />
+                                    <MenuButton icon={<IconPrint />} label="Pengaturan Kop" isActive={currentView === 'kelola_kop'} onClick={() => setCurrentView('kelola_kop')} />
+                                    <MenuButton icon={<IconInfo />} label="Info Aplikasi" isActive={currentView === 'kelola_info'} onClick={() => setCurrentView('kelola_info')} />
                                     <MenuButton icon={<IconImage />} label="Galeri Foto KBM" isActive={currentView === 'kelola_galeri'} onClick={() => setCurrentView('kelola_galeri')} />
                                     <MenuButton icon={<IconLock />} label="Kelola Akun Kepsek" isActive={currentView === 'kelola_kepsek'} onClick={() => setCurrentView('kelola_kepsek')} />
                                     <MenuButton icon={<IconLock />} label="Pengaturan Admin" isActive={currentView === 'kelola_admin'} onClick={() => setCurrentView('kelola_admin')} />
@@ -3798,14 +3798,14 @@
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard Kepsek" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconHistory />} label="Monitoring Jurnal" isActive={currentView === 'monitoring_jurnal'} onClick={() => setCurrentView('monitoring_jurnal')} />
-                                    <MenuButton icon={<IconChart />} label="Rekap Rata-Rata Nilai" isActive={currentView === 'monitoring_nilai'} onClick={() => setCurrentView('monitoring_nilai')} />
-                                    <MenuButton icon={<IconChart />} label="Rekap &amp; Laporan" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
+                                    <MenuButton icon={<IconChart />} label="Rekap Nilai" isActive={currentView === 'monitoring_nilai'} onClick={() => setCurrentView('monitoring_nilai')} />
+                                    <MenuButton icon={<IconChart />} label="Rekap & Laporan" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
                                 </>
                             ) : (
                                 <>
                                     <MenuButton icon={<IconDashboard />} label="Dashboard" isActive={currentView === 'dashboard'} onClick={() => setCurrentView('dashboard')} />
                                     <MenuButton icon={<IconUsers />} label="Data Siswa" isActive={currentView === 'siswa'} onClick={() => setCurrentView('siswa')} />
-                                    <MenuButton icon={<IconBook />} label="Isi Jurnal &amp; Absen" isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
+                                    <MenuButton icon={<IconBook />} label="Isi Jurnal & Absen" isActive={currentView === 'isi_jurnal'} onClick={() => setCurrentView('isi_jurnal')} />
                                     <MenuButton icon={<IconHistory />} label="Riwayat Jurnal" isActive={currentView === 'riwayat'} onClick={() => setCurrentView('riwayat')} />
                                     <MenuButton icon={<IconChart />} label="Penilaian Siswa" isActive={currentView === 'penilaian'} onClick={() => setCurrentView('penilaian')} />
                                     <MenuButton icon={<IconChart />} label="Rekap Laporan" isActive={currentView === 'rekap'} onClick={() => setCurrentView('rekap')} />
@@ -3828,7 +3828,7 @@
                                 className="w-full bg-rose-500/10 hover:bg-rose-50 hover:text-white border border-rose-500/20 text-rose-400 text-xs font-bold py-2.5 rounded-xl transition flex items-center justify-center space-x-2"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                                <span>Keluar Sistem</span>
+                                <span>Logout</span>
                             </button>
                         </div>
                     </aside>
