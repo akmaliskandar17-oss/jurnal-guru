@@ -499,6 +499,15 @@ function buka(key, btn){
   return tampilBelumDibangun(key);
 }
 
+/* Pindah tab lewat kode berdasarkan key menu (mis. "daftarjurnal").
+   Menyorot tombol nav yang sesuai lalu memanggil buka(). */
+function bukaTab(key){
+  const label = LABEL[key] || key;
+  const btn = Array.from(document.querySelectorAll("#nav button"))
+    .find(b => b.textContent === label);
+  buka(key, btn || null);
+}
+
 function tampilBelumDibangun(key){
   $("main").innerHTML =
     '<div class="card"><h2>' + (LABEL[key]||key) + '</h2>' +
@@ -641,44 +650,88 @@ window.hapusKelas = async (id, nama) => {
 
 
 /* ============================================================
-   MODUL: MAPEL  (pola sama dengan Kelas)
+   MODUL: MAPEL  (dengan Kode Mapel, Edit, header Aksi)
+   Catatan: field database tetap bernama "kelompok" agar data lama
+   tidak rusak; yang berubah hanya label tampilan menjadi "Kode Mapel".
    ============================================================ */
+let _mapelCache = [];
+let _editMapelId = null;
+
 async function muatMapel(){
   const bolehEdit = bisaEditMaster();
+  _editMapelId = null;
   $("main").innerHTML =
     (bolehEdit ?
-      '<div class="card"><h2>Tambah Mata Pelajaran</h2><div class="row">' +
+      '<div class="card"><h2 id="mJudulForm">Tambah Mata Pelajaran</h2><div class="row">' +
         '<div><label>Nama Mapel</label><input id="mNama" placeholder="Contoh: Matematika"></div>' +
-        '<div><label>Kelompok</label><input id="mKelompok" placeholder="Contoh: Wajib / Peminatan"></div>' +
-      '</div><button class="btn" onclick="tambahMapel()">Simpan Mapel</button></div>' : '') +
+        '<div><label>Kode Mapel</label><input id="mKode" placeholder="Contoh: MTK"></div>' +
+      '</div>' +
+      '<button class="btn" id="mBtnSimpan" onclick="simpanMapel()">Simpan Mapel</button>' +
+      '<button class="btn btn-ghost" id="mBtnBatal" style="margin-left:8px;display:none" ' +
+        'onclick="batalEditMapel()">Batal Edit</button>' +
+      '</div>' : '') +
     '<div class="card"><h2>Daftar Mata Pelajaran</h2>' +
     '<div id="mapelList"><div class="page-kosong">Memuat...</div></div></div>';
   await renderMapel();
 }
+
 async function renderMapel(){
   try {
-    const list = await ambilSemua("mapel", "namaMapel");
+    _mapelCache = await ambilSemua("mapel", "namaMapel");
     const bolehEdit = bisaEditMaster();
-    if (!list.length) { $("mapelList").innerHTML = '<div class="empty">Belum ada mapel.</div>'; return; }
-    let html = '<table><tr><th>Nama Mapel</th><th>Kelompok</th>' +
-      (bolehEdit ? '<th></th>' : '') + '</tr>';
-    list.forEach(m => {
+    if (!_mapelCache.length) { $("mapelList").innerHTML = '<div class="empty">Belum ada mapel.</div>'; return; }
+    let html = '<table><tr><th>Nama Mapel</th><th>Kode Mapel</th>' +
+      (bolehEdit ? '<th class="aksi-cell">Aksi</th>' : '') + '</tr>';
+    _mapelCache.forEach(m => {
+      const nmAman = esc(m.namaMapel).replace(/'/g,"");
       html += '<tr><td><b>' + esc(m.namaMapel) + '</b></td><td>' + esc(m.kelompok || "-") + '</td>' +
-        (bolehEdit ? '<td style="text-align:right"><button class="aksi-hapus" onclick="hapusMapel(\'' +
-          m.id + '\',\'' + esc(m.namaMapel).replace(/'/g,"") + '\')">Hapus</button></td>' : '') + '</tr>';
+        (bolehEdit ? '<td class="aksi-cell">' +
+          '<button class="aksi-edit" onclick="editMapel(\'' + m.id + '\')">Edit</button>' +
+          '<button class="aksi-hapus" onclick="hapusMapel(\'' + m.id + '\',\'' + nmAman + '\')">Hapus</button>' +
+          '</td>' : '') + '</tr>';
     });
     $("mapelList").innerHTML = html + '</table>';
   } catch (e) { $("mapelList").innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; }
 }
-window.tambahMapel = async () => {
-  const namaMapel = $("mNama").value.trim(), kelompok = $("mKelompok").value.trim();
+
+window.simpanMapel = async () => {
+  const namaMapel = $("mNama").value.trim(), kelompok = $("mKode").value.trim();
   if (!namaMapel) return toast("Nama mapel belum diisi.");
   try {
-    await addDoc(collection(db, "mapel"), { namaMapel, kelompok });
-    $("mNama").value = ""; $("mKelompok").value = "";
-    toast("Mapel ditambahkan."); await renderMapel();
+    if (_editMapelId) {
+      await updateDoc(doc(db, "mapel", _editMapelId), { namaMapel, kelompok });
+      toast("Mapel diperbarui.");
+      batalEditMapel();
+    } else {
+      await addDoc(collection(db, "mapel"), { namaMapel, kelompok });
+      $("mNama").value = ""; $("mKode").value = "";
+      toast("Mapel ditambahkan.");
+    }
+    await renderMapel();
   } catch (e) { toast("Gagal menyimpan: " + e.message); }
 };
+
+window.editMapel = (id) => {
+  const m = _mapelCache.find(x => x.id === id);
+  if (!m) return;
+  _editMapelId = id;
+  $("mNama").value = m.namaMapel || "";
+  $("mKode").value = m.kelompok || "";
+  $("mJudulForm").textContent = "Edit Mata Pelajaran";
+  $("mBtnSimpan").textContent = "Perbarui Mapel";
+  $("mBtnBatal").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  $("mNama").focus();
+};
+
+window.batalEditMapel = () => {
+  _editMapelId = null;
+  $("mNama").value = ""; $("mKode").value = "";
+  $("mJudulForm").textContent = "Tambah Mata Pelajaran";
+  $("mBtnSimpan").textContent = "Simpan Mapel";
+  $("mBtnBatal").style.display = "none";
+};
+
 window.hapusMapel = async (id, nama) => {
   if (!confirm('Hapus mapel "' + nama + '"?')) return;
   try { await deleteDoc(doc(db, "mapel", id)); toast("Mapel dihapus."); await renderMapel(); }
@@ -1555,7 +1608,10 @@ window.simpanJurnal = async () => {
         status: "Menunggu", verifikasiOleh: "", tglVerifikasi: ""
       });
       setMsg("Jurnal diperbarui. Status kembali ke Menunggu.", true);
-      batalEditJurnal();
+      _editJurnalId = null;
+      toast("Jurnal diperbarui.");
+      bukaTab("daftarjurnal");   // kembali ke daftar
+      return;
     } else {
       await addDoc(collection(db, "jurnal"), data);
       $("jJam").value = ""; $("jMateri").value = ""; $("jCatatan").value = "";
@@ -1570,7 +1626,13 @@ window.simpanJurnal = async () => {
 };
 
 window.batalEditJurnal = () => {
+  const sedangEdit = !!_editJurnalId;
   _editJurnalId = null;
+  if (sedangEdit) {
+    // saat membatalkan edit, kembali ke Daftar Jurnal
+    bukaTab("daftarjurnal");
+    return;
+  }
   $("jJudulForm") && ($("jJudulForm").textContent = "Isi Jurnal Mengajar");
   $("jBtnSimpan") && ($("jBtnSimpan").textContent = "Simpan Jurnal");
   $("jBtnBatal") && ($("jBtnBatal").style.display = "none");
@@ -1827,17 +1889,90 @@ window.lihatDokumentasi = (id) => {
 };
 
 /* ---- Cetak / PDF ---- */
-window.cetakJurnal = (id) => {
+/* Cari satu pengguna berdasar peran (mis. kepsek) atau berdasar email/nama guru */
+async function cariPengguna_(opsi){
+  try {
+    const semua = await ambilSemua("pengguna");
+    if (opsi.email) {
+      const byEmail = semua.find(u => String(u.email||"").toLowerCase() === String(opsi.email).toLowerCase());
+      if (byEmail) return byEmail;
+    }
+    if (opsi.nama) {
+      const byNama = semua.find(u => String(u.nama||"") === String(opsi.nama));
+      if (byNama) return byNama;
+    }
+    if (opsi.role) {
+      const byRole = semua.find(u => String(u.role||"") === opsi.role);
+      if (byRole) return byRole;
+    }
+  } catch (e) { /* abaikan */ }
+  return null;
+}
+
+/* Format tanggal Indonesia dd/mm/yyyy untuk tanda tangan (tanggal berjalan) */
+function tglHariIni_(){
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  return dd + "/" + mm + "/" + d.getFullYear();
+}
+
+window.cetakJurnal = async (id) => {
   const j = _jurnalCache.find(x => x.id === id);
   if (!j) return;
+  toast("Menyiapkan cetakan...");
+
+  // Ambil data kepala sekolah & guru mapel dari collection pengguna
+  const [kepsek, guru] = await Promise.all([
+    cariPengguna_({ role: "kepsek" }),
+    cariPengguna_({ email: j.email, nama: j.nama })
+  ]);
+
+  const namaKepsek = (kepsek && kepsek.nama) ? kepsek.nama : "(Kepala Sekolah)";
+  const nipKepsek  = (kepsek && kepsek.nip)  ? kepsek.nip  : "";
+  const namaGuru   = (guru && guru.nama) ? guru.nama : (j.nama || "(Guru)");
+  const nipGuru    = (guru && guru.nip)  ? guru.nip  : "";
+  const tglTtd     = tglHariIni_();
+
+  // Rekap: HANYA siswa yang tidak hadir (sakit/izin/alpa).
   const absensi = Array.isArray(j.absensi) ? j.absensi : [];
-  let barisAbsen = absensi.map((a, i) =>
-    '<tr><td>' + (i+1) + '</td><td>' + esc(a.nis||"-") + '</td><td>' + esc(a.nama) +
-    '</td><td>' + esc(a.status) + '</td></tr>').join("");
+  const takHadir = absensi.filter(a => String(a.status).toLowerCase() !== "hadir");
+
+  let tabelRekap = "";
+  if (takHadir.length > 0) {
+    let baris = takHadir.map((a, i) =>
+      '<tr><td>' + (i+1) + '</td><td>' + esc(a.nis||"-") + '</td><td>' + esc(a.nama) +
+      '</td><td>' + esc(a.status) + '</td></tr>').join("");
+    tabelRekap =
+      '<table><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kehadiran</th></tr>' + baris + '</table>';
+  } else {
+    // semua hadir -> tidak menampilkan tabel
+    tabelRekap = '<p style="margin-top:10px"><i>Semua siswa hadir.</i></p>';
+  }
 
   const fotoHtml = (j.fotoUrl && String(j.fotoUrl).startsWith("data:")) ?
     '<div style="margin-top:16px"><b>Dokumentasi:</b><br><img src="' + j.fotoUrl +
     '" style="max-width:400px;margin-top:8px;border:1px solid #ccc"></div>' : '';
+
+  // Blok tanda tangan model gambar: dua kolom rata kiri, baris sejajar.
+  const blokTtd =
+    '<table class="ttd">' +
+      '<tr>' +
+        '<td class="kolom-ttd"></td>' +
+        '<td class="kolom-ttd">' + esc(tglTtd) + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td class="kolom-ttd">Mengetahui:<br>Kepala Sekolah,</td>' +
+        '<td class="kolom-ttd">&nbsp;<br>Guru Mata Pelajaran,</td>' +
+      '</tr>' +
+      '<tr class="spasi-ttd"><td></td><td></td></tr>' +
+      '<tr>' +
+        '<td class="kolom-ttd"><span class="nama-ttd">' + esc(namaKepsek) + '</span>' +
+          (nipKepsek ? '<br><span class="nip-ttd">NIP. ' + esc(nipKepsek) + '</span>' : '') + '</td>' +
+        '<td class="kolom-ttd"><span class="nama-ttd">' + esc(namaGuru) + '</span>' +
+          (nipGuru ? '<br><span class="nip-ttd">NIP. ' + esc(nipGuru) + '</span>' : '') + '</td>' +
+      '</tr>' +
+    '</table>';
 
   const w = window.open("", "_blank");
   w.document.write(
@@ -1845,7 +1980,14 @@ window.cetakJurnal = (id) => {
     '<style>body{font-family:Arial,sans-serif;padding:30px;color:#000;font-size:13px}' +
     'h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px}' +
     'th,td{border:1px solid #999;padding:5px 7px;text-align:left;font-size:12px}' +
-    '.meta{margin:10px 0;line-height:1.7}.ttd{margin-top:40px;display:flex;justify-content:space-between}' +
+    '.meta{margin:10px 0;line-height:1.7}' +
+    // tanda tangan: tabel tanpa garis, dua kolom rata kiri
+    '.ttd{margin-top:48px;border:none}' +
+    '.ttd td{border:none;padding:0 0 2px;vertical-align:top;width:50%;font-size:13px}' +
+    '.ttd .kolom-ttd{text-align:left}' +
+    '.ttd .spasi-ttd td{height:60px}' +          // ruang untuk tanda tangan basah
+    '.ttd .nama-ttd{font-weight:bold;text-decoration:underline}' +
+    '.ttd .nip-ttd{font-size:11px}' +
     '</style></head><body>' +
     '<h2>Jurnal Mengajar</h2>' +
     '<div class="meta">' +
@@ -1857,11 +1999,10 @@ window.cetakJurnal = (id) => {
     '</div>' +
     '<div><b>Materi:</b> ' + esc(j.materi||"-") + '</div>' +
     (j.catatan ? '<div style="margin-top:6px"><b>Catatan:</b> ' + esc(j.catatan) + '</div>' : '') +
-    '<div style="margin-top:6px"><b>Rekap:</b> ' + esc(j.kehadiran||"-") + '</div>' +
-    '<table><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kehadiran</th></tr>' + barisAbsen + '</table>' +
+    '<div style="margin-top:6px"><b>Rekap Kehadiran:</b> ' + esc(j.kehadiran||"-") + '</div>' +
+    tabelRekap +
     fotoHtml +
-    '<div class="ttd"><div>Mengetahui,<br>Kepala Sekolah<br><br><br>(__________________)</div>' +
-    '<div>Guru Mapel,<br><br><br><br>(' + esc(j.nama||"__________") + ')</div></div>' +
+    blokTtd +
     '</body></html>');
   w.document.close();
   w.focus();
