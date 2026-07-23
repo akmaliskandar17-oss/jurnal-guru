@@ -92,6 +92,7 @@
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 8px;
+    position: sticky; top: 0; z-index: 500;
   }
   header h1 { font-size: 18px; font-weight: 700; }
   header .user-info { font-size: 13px; opacity: .95; text-align: right; }
@@ -106,6 +107,7 @@
     background: var(--card);
     border-bottom: 1px solid var(--line);
     display: flex; overflow-x: auto;
+    position: sticky; z-index: 490;
   }
   nav button {
     background: none; border: none; padding: 14px 18px;
@@ -270,7 +272,58 @@
 .bulkbar .info { font-size: 13px; font-weight: 600; color: var(--amber); }
 th.cek-col, td.cek-col { width: 34px; text-align: center; }
 td.cek-col input, th.cek-col input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+
+/* Wadah scroll horizontal untuk tabel siswa di layar sempit */
+.tabel-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.tabel-siswa { min-width: 560px; }
+.tabel-siswa td.cek-col, .tabel-siswa th.cek-col {
+  width: 40px; min-width: 40px; vertical-align: middle; }
+.tabel-siswa .nama-siswa { min-width: 150px; }
+.tabel-siswa .aksi-cell { min-width: 130px; white-space: nowrap; }
+.aksi-tombol { display: flex; gap: 6px; justify-content: flex-end; }
+
+/* Tabel pengguna: berubah jadi kartu bertumpuk di HP */
+@media (max-width: 600px) {
+  table.tabel-responsif, table.tabel-responsif tbody,
+  table.tabel-responsif tr, table.tabel-responsif td { display: block; width: 100%; }
+  table.tabel-responsif tr:first-child { display: none; } /* sembunyikan baris header */
+  table.tabel-responsif tr {
+    border: 1px solid var(--line); border-radius: 10px;
+    margin-bottom: 12px; padding: 6px 4px; }
+  table.tabel-responsif td {
+    border: none; padding: 7px 12px;
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  table.tabel-responsif td::before {
+    content: attr(data-label); font-weight: 600; color: var(--muted);
+    font-size: 12px; flex-shrink: 0; }
+  table.tabel-responsif td.aksi-cell { justify-content: flex-end; }
+  table.tabel-responsif td.aksi-cell::before { content: ""; }
+}
 .info-kolom { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+/* Pagination */
+.pagination { display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pagination .hinfo { font-size: 13px; color: var(--muted); }
+.pagination .hbtn { background: #eef1f8; color: var(--ink); border: 1px solid var(--line);
+  padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin: 0; }
+.pagination .hbtn:hover:not(:disabled) { background: #e0e5f2; }
+.pagination .hbtn:disabled { opacity: .4; cursor: not-allowed; }
+/* Modul Nilai */
+.nilai-sub { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.nilai-sub button { background: #eef1f8; color: var(--muted); border: none;
+  padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin: 0; }
+.nilai-sub button.active { background: var(--primary); color: #fff; }
+.input-nilai { width: 70px; text-align: center; padding: 6px; }
+table.tabel-nilai td.n-input { text-align: center; }
+.bobot-info { background: var(--amber-bg); color: var(--amber); padding: 12px 14px;
+  border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+.bobot-total { font-weight: 700; font-size: 15px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--line); }
+.bobot-total.ok { color: var(--green); }
+.bobot-total.warn { color: var(--red); }
+.nilai-akhir { font-weight: 700; }
+.nilai-akhir.tuntas { color: var(--green); }
+.nilai-akhir.belum { color: var(--red); }
 /* Absensi per siswa */
 .absen-aksi { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 14px 0 6px; }
 .absen-aksi .btn-sm { margin-top: 0; }
@@ -310,9 +363,10 @@ th.k-Alpa  { color: var(--red); }
 .jurnal-item .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 .jurnal-item .actions-verif { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
 .jurnal-item { position: relative; }
-.jurnal-cek { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); }
-.jurnal-cek input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
-.jurnal-item .head { padding-top: 8px; }
+.jurnal-cek { flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 2px; margin: 0; cursor: pointer; }
+.jurnal-cek input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); margin: 0; }
+.jurnal-item .head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding-top: 0; justify-content: space-between; }
+.jurnal-item .head-teks { flex: 1; min-width: 0; }
 .semua-hadir { color: var(--green); font-size: 13px; margin-top: 4px; }
 .tidak-hadir { color: var(--warn, #b3541e); font-size: 13px; margin-top: 4px; }
 /* Bulkbar jurnal */
@@ -367,6 +421,18 @@ th.k-Alpa  { color: var(--red); }
 </div>
 
 <div id="toast" class="toast"></div>
+
+<!-- Modal konfirmasi custom (pengganti confirm bawaan browser) -->
+<div id="modalKonfirmasi" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-judul" id="modalJudul">Konfirmasi</div>
+    <div class="modal-pesan" id="modalPesan"></div>
+    <div class="modal-aksi">
+      <button class="btn btn-ghost" id="modalBatal" style="margin-top:0">Batal</button>
+      <button class="btn btn-red" id="modalOke" style="margin-top:0">Hapus</button>
+    </div>
+  </div>
+</div>
 <script type="module">
 import { initializeApp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -410,6 +476,26 @@ const LABEL = {
   pengguna:"Pengguna", pengaturan:"Pengaturan"
 };
 const namaRole = r => ({admin:"Admin", kepsek:"Kepala Sekolah", guru:"Guru"}[r] || r);
+
+/* Format tampilan mapel: "(KODE) Nama". Kode = field kelompok.
+   Menerima objek mapel {namaMapel, kelompok} atau nama mapel (string).
+   Bila hanya nama diberikan, dicari kodenya dari cache mapel. */
+function labelMapel(m){
+  if (typeof m === "string") {
+    const found = (window._mapelSemua || []).find(x => x.namaMapel === m);
+    m = found || { namaMapel: m, kelompok: "" };
+  }
+  const nama = m.namaMapel || "";
+  const kode = (m.kelompok || "").trim();
+  return kode ? "(" + kode + ") " + nama : nama;
+}
+/* Bangun <option> untuk daftar mapel: value tetap namaMapel, teks pakai labelMapel */
+function opsiMapelHTML(mapelList, terpilih){
+  window._mapelSemua = mapelList;  // simpan untuk labelMapel(string)
+  return '<option value="">-- pilih mapel --</option>' +
+    mapelList.map(m => '<option value="' + esc(m.namaMapel) + '"' +
+      (m.namaMapel===terpilih?" selected":"") + '>' + esc(labelMapel(m)) + '</option>').join("");
+}
 const bisaEditMaster = () => ME && ME.role === "admin";
 
 const $ = id => document.getElementById(id);
@@ -421,6 +507,30 @@ function toast(teks){
   t.textContent = teks;
   t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+/* Modal konfirmasi cantik (pengganti confirm bawaan).
+   Pakai: if (await konfirmasi("Judul", "Pesan", "Hapus")) { ... } */
+function konfirmasi(judul, pesan, labelOke = "Hapus", okeMerah = true){
+  return new Promise(resolve => {
+    const overlay = $("modalKonfirmasi");
+    $("modalJudul").textContent = judul;
+    $("modalPesan").textContent = pesan;
+    const btnOke = $("modalOke"), btnBatal = $("modalBatal");
+    btnOke.textContent = labelOke;
+    btnOke.className = "btn " + (okeMerah ? "btn-red" : "");
+    btnOke.style.marginTop = "0";
+    overlay.classList.add("show");
+
+    const tutup = (hasil) => {
+      overlay.classList.remove("show");
+      btnOke.onclick = null; btnBatal.onclick = null; overlay.onclick = null;
+      resolve(hasil);
+    };
+    btnOke.onclick = () => tutup(true);
+    btnBatal.onclick = () => tutup(false);
+    overlay.onclick = (e) => { if (e.target === overlay) tutup(false); };
+  });
 }
 
 /* ============ AUTH ============ */
@@ -484,7 +594,19 @@ function bangunNav(){
     nav.appendChild(b);
     if (i === 0) buka(key, b);
   });
+  aturStickyNav();
 }
+
+/* Set posisi 'top' navbar tepat di bawah header agar keduanya menempel
+   saat halaman di-scroll. Dipanggil ulang saat ukuran layar berubah. */
+function aturStickyNav(){
+  const header = document.querySelector("header");
+  const nav = $("nav");
+  if (!header || !nav) return;
+  const tinggi = header.offsetHeight;
+  nav.style.top = tinggi + "px";
+}
+window.addEventListener("resize", aturStickyNav);
 
 function buka(key, btn){
   document.querySelectorAll("#nav button").forEach(x => x.classList.remove("active"));
@@ -496,6 +618,7 @@ function buka(key, btn){
   if (key === "pengguna") return muatPengguna();
   if (key === "isijurnal")   return muatIsiJurnal();
   if (key === "daftarjurnal") return muatDaftarJurnal();
+  if (key === "nilai")   return muatNilai();
   return tampilBelumDibangun(key);
 }
 
@@ -643,7 +766,7 @@ window.batalEditKelas = () => {
 };
 
 window.hapusKelas = async (id, nama) => {
-  if (!confirm('Hapus kelas "' + nama + '"?')) return;
+  if (!(await konfirmasi('Hapus Kelas', 'Hapus kelas "' + nama + '"?'))) return;
   try { await deleteDoc(doc(db, "kelas", id)); toast("Kelas dihapus."); await renderKelas(); }
   catch (e) { toast("Gagal menghapus: " + e.message); }
 };
@@ -669,6 +792,15 @@ async function muatMapel(){
       '<button class="btn" id="mBtnSimpan" onclick="simpanMapel()">Simpan Mapel</button>' +
       '<button class="btn btn-ghost" id="mBtnBatal" style="margin-left:8px;display:none" ' +
         'onclick="batalEditMapel()">Batal Edit</button>' +
+      '</div>' +
+      // ---- Import massal Excel ----
+      '<div class="card"><h2>Input Massal (Upload Excel)</h2>' +
+        '<p class="info-kolom">Unduh template, isi datanya, lalu upload file Excel (.xlsx) di sini. ' +
+          'Kolom: <code>Nama Mapel</code>, <code>Kode Mapel</code>.</p>' +
+        '<button class="btn btn-ghost" onclick="unduhTemplateMapel()">\u2193 Unduh Template Excel</button>' +
+        '<div style="margin-top:14px"><label>Pilih file Excel</label>' +
+          '<input type="file" id="mFile" accept=".xlsx,.xls" onchange="importMapel(event)"></div>' +
+        '<div id="mImportMsg"></div>' +
       '</div>' : '') +
     '<div class="card"><h2>Daftar Mata Pelajaran</h2>' +
     '<div id="mapelList"><div class="page-kosong">Memuat...</div></div></div>';
@@ -733,9 +865,66 @@ window.batalEditMapel = () => {
 };
 
 window.hapusMapel = async (id, nama) => {
-  if (!confirm('Hapus mapel "' + nama + '"?')) return;
+  if (!(await konfirmasi('Hapus Mapel', 'Hapus mapel "' + nama + '"?'))) return;
   try { await deleteDoc(doc(db, "mapel", id)); toast("Mapel dihapus."); await renderMapel(); }
   catch (e) { toast("Gagal menghapus: " + e.message); }
+};
+
+/* ---- Template Excel mapel ---- */
+window.unduhTemplateMapel = () => {
+  const contoh = [
+    { "Nama Mapel": "Matematika", "Kode Mapel": "MTK" },
+    { "Nama Mapel": "Bahasa Indonesia", "Kode Mapel": "BIN" }
+  ];
+  const ws = XLSX.utils.json_to_sheet(contoh, { header: ["Nama Mapel", "Kode Mapel"] });
+  ws["!cols"] = [{ wch: 28 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Mapel");
+  XLSX.writeFile(wb, "Template-Import-Mapel.xlsx");
+};
+
+/* ---- Import massal mapel dari Excel ---- */
+window.importMapel = async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const setMsg = (t, ok) => {
+    $("mImportMsg").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>';
+  };
+  setMsg("Membaca file...", true);
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    if (!rows.length) { setMsg("File kosong atau format tidak dikenali.", false); ev.target.value=""; return; }
+
+    const dataMapel = [];
+    let lewat = 0;
+    rows.forEach(r => {
+      const namaMapel = String(r["Nama Mapel"] ?? r["Nama"] ?? r["nama"] ?? "").trim();
+      const kelompok  = String(r["Kode Mapel"] ?? r["Kode"] ?? r["Kelompok"] ?? r["kode"] ?? "").trim();
+      if (!namaMapel) { lewat++; return; }
+      dataMapel.push({ namaMapel, kelompok });
+    });
+    if (!dataMapel.length) { setMsg("Tidak ada baris valid (kolom Nama Mapel kosong semua).", false); ev.target.value=""; return; }
+
+    setMsg("Menyimpan " + dataMapel.length + " mapel...", true);
+    let batch = writeBatch(db), n = 0;
+    for (const m of dataMapel) {
+      batch.set(doc(collection(db, "mapel")), m);
+      n++;
+      if (n % 400 === 0) { await batch.commit(); batch = writeBatch(db); }
+    }
+    await batch.commit();
+
+    let hasil = dataMapel.length + " mapel berhasil diimpor.";
+    if (lewat) hasil += " " + lewat + " baris dilewati (tanpa nama).";
+    setMsg(hasil, true);
+    await renderMapel();
+  } catch (e) {
+    setMsg("Gagal mengimpor: " + e.message, false);
+  }
+  ev.target.value = "";
 };
 
 /* ============================================================
@@ -745,6 +934,8 @@ window.hapusMapel = async (id, nama) => {
    ============================================================ */
 let _editSiswaId = null;
 let _pilihSiswa = new Set();   // id siswa yang dicentang
+let _halamanSiswa = 1;         // halaman aktif pagination
+const SISWA_PER_HALAMAN = 25;  // jumlah siswa per halaman
 
 async function muatSiswa(){
   const bolehEdit = bisaEditMaster();
@@ -793,10 +984,10 @@ async function muatSiswa(){
       '<div class="toolbar">' +
         '<h2 id="sJudulDaftar" style="flex:2;min-width:180px;margin:0">Daftar Siswa</h2>' +
         '<div><label>Saring per kelas</label>' +
-          '<select id="sFilter" onchange="renderSiswa()">' +
+          '<select id="sFilter" onchange="renderSiswaReset()">' +
             '<option value="">Semua Kelas</option>' + opsiKelas + '</select></div>' +
         '<div><label>Cari nama / NIS</label>' +
-          '<input id="sCari" placeholder="Cari nama / NIS..." oninput="renderSiswa()"></div>' +
+          '<input id="sCari" placeholder="Cari nama / NIS..." oninput="renderSiswaReset()"></div>' +
       '</div>' +
       (bolehEdit ?
         '<div class="bulkbar" id="sBulkbar">' +
@@ -824,17 +1015,37 @@ function siswaTersaring(){
   return list;
 }
 
+/* Dipanggil saat filter/cari berubah: reset ke halaman 1 lalu render */
+window.renderSiswaReset = () => { _halamanSiswa = 1; renderSiswa(); };
+
+window.gantiHalamanSiswa = (arah) => {
+  _halamanSiswa += arah;
+  renderSiswa();
+  // gulir ke atas daftar agar nyaman
+  const el = $("siswaList");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
 window.renderSiswa = () => {
   const bolehEdit = bisaEditMaster();
-  const list = siswaTersaring();
-  $("sJudulDaftar").textContent = "Daftar Siswa (" + list.length + ")";
+  const semua = siswaTersaring();
+  const total = semua.length;
+  $("sJudulDaftar").textContent = "Daftar Siswa (" + total + ")";
 
-  if (!list.length) {
+  if (!total) {
     $("siswaList").innerHTML = '<div class="empty">Tidak ada siswa yang cocok.</div>';
     perbaruiBulkbar();
     return;
   }
-  let html = '<table><tr>' +
+
+  // Hitung batas halaman
+  const totalHalaman = Math.ceil(total / SISWA_PER_HALAMAN);
+  if (_halamanSiswa > totalHalaman) _halamanSiswa = totalHalaman;
+  if (_halamanSiswa < 1) _halamanSiswa = 1;
+  const mulai = (_halamanSiswa - 1) * SISWA_PER_HALAMAN;
+  const list = semua.slice(mulai, mulai + SISWA_PER_HALAMAN);
+
+  let html = '<div class="tabel-scroll"><table class="tabel-siswa"><tr>' +
     (bolehEdit ? '<th class="cek-col"><input type="checkbox" id="sCekAll" onclick="cekSemuaSiswa(this)"></th>' : '') +
     '<th>Kelas</th><th>NIS</th><th>Nama Lengkap</th>' +
     (bolehEdit ? '<th class="aksi-cell">Aksi</th>' : '') + '</tr>';
@@ -846,13 +1057,28 @@ window.renderSiswa = () => {
         ' onclick="togglePilihSiswa(\'' + s.id + '\')"></td>' : '') +
       '<td><span class="chip-kelas">' + esc(s.kelas || "-") + '</span></td>' +
       '<td>' + esc(s.nis || "-") + '</td>' +
-      '<td><b>' + esc(s.namaSiswa) + '</b></td>' +
-      (bolehEdit ? '<td class="aksi-cell">' +
+      '<td class="nama-siswa"><b>' + esc(s.namaSiswa) + '</b></td>' +
+      (bolehEdit ? '<td class="aksi-cell"><div class="aksi-tombol">' +
         '<button class="aksi-edit" onclick="editSiswa(\'' + s.id + '\')">Edit</button>' +
         '<button class="aksi-hapus" onclick="hapusSiswa(\'' + s.id + '\',\'' + nmAman + '\')">Hapus</button>' +
-        '</td>' : '') + '</tr>';
+        '</div></td>' : '') + '</tr>';
   });
-  $("siswaList").innerHTML = html + '</table>';
+  html += '</table></div>';
+
+  // Kontrol pagination (hanya bila lebih dari 1 halaman)
+  if (totalHalaman > 1) {
+    const dari = mulai + 1, sampai = Math.min(mulai + SISWA_PER_HALAMAN, total);
+    html += '<div class="pagination">' +
+      '<button class="hbtn" onclick="gantiHalamanSiswa(-1)"' +
+        (_halamanSiswa <= 1 ? ' disabled' : '') + '>\u2039 Sebelumnya</button>' +
+      '<span class="hinfo">Menampilkan ' + dari + '\u2013' + sampai + ' dari ' + total +
+        ' \u00b7 Halaman ' + _halamanSiswa + '/' + totalHalaman + '</span>' +
+      '<button class="hbtn" onclick="gantiHalamanSiswa(1)"' +
+        (_halamanSiswa >= totalHalaman ? ' disabled' : '') + '>Berikutnya \u203a</button>' +
+    '</div>';
+  }
+
+  $("siswaList").innerHTML = html;
   perbaruiBulkbar();
 };
 
@@ -921,7 +1147,7 @@ window.batalEditSiswa = () => {
 
 /* ---- Hapus satu & massal ---- */
 window.hapusSiswa = async (id, nama) => {
-  if (!confirm('Hapus siswa "' + nama + '"?')) return;
+  if (!(await konfirmasi('Hapus Siswa', 'Hapus siswa "' + nama + '"?'))) return;
   try {
     await deleteDoc(doc(db, "siswa", id));
     _pilihSiswa.delete(id);
@@ -933,7 +1159,7 @@ window.hapusSiswa = async (id, nama) => {
 window.hapusSiswaMassal = async () => {
   const ids = Array.from(_pilihSiswa);
   if (!ids.length) return;
-  if (!confirm('Hapus ' + ids.length + ' siswa yang dipilih? Tindakan ini tidak bisa dibatalkan.')) return;
+  if (!(await konfirmasi('Hapus Siswa', 'Hapus ' + ids.length + ' siswa yang dipilih? Tindakan ini tidak bisa dibatalkan.'))) return;
   try {
     // writeBatch: hapus banyak sekaligus dalam satu operasi
     let batch = writeBatch(db), n = 0;
@@ -1051,8 +1277,9 @@ async function muatPengguna(){
 
   const opsiKelas = '<option value="">(tidak ada)</option>' +
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '">' + esc(k.namaKelas) + '</option>').join("");
+  window._mapelSemua = mapelList;
   const opsiMapel = '<option value="">(tidak ada)</option>' +
-    mapelList.map(m => '<option value="' + esc(m.namaMapel) + '">' + esc(m.namaMapel) + '</option>').join("");
+    mapelList.map(m => '<option value="' + esc(m.namaMapel) + '">' + esc(labelMapel(m)) + '</option>').join("");
 
   $("main").innerHTML =
     '<div class="card"><h2 id="uJudulForm">Tambah Pengguna</h2>' +
@@ -1121,18 +1348,18 @@ async function renderPengguna(){
     // urutkan berdasar nama di sisi klien
     _penggunaCache.sort((a,b) => String(a.nama||"").localeCompare(String(b.nama||"")));
     if (!_penggunaCache.length) { $("penggunaList").innerHTML = '<div class="empty">Belum ada pengguna.</div>'; return; }
-    let html = '<table><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Mapel</th>' +
+    let html = '<table class="tabel-responsif"><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Mapel</th>' +
       '<th class="aksi-cell">Aksi</th></tr>';
     _penggunaCache.forEach(u => {
       const nmAman = esc(u.nama || u.email).replace(/'/g,"");
       const iniSaya = (u.id === ME.uid);
-      html += '<tr><td><b>' + esc(u.nama || "-") + '</b>' +
+      html += '<tr><td data-label="Nama"><b>' + esc(u.nama || "-") + '</b>' +
           (iniSaya ? ' <span class="pill">Anda</span>' : '') + '</td>' +
-        '<td>' + esc(u.email || "-") + '</td>' +
-        '<td><span class="badge" style="background:var(--amber-bg);color:var(--amber)">' +
+        '<td data-label="Email">' + esc(u.email || "-") + '</td>' +
+        '<td data-label="Peran"><span class="badge" style="background:var(--amber-bg);color:var(--amber)">' +
           namaRole(u.role) + '</span></td>' +
-        '<td>' + esc(u.mapel || "-") + '</td>' +
-        '<td class="aksi-cell">' +
+        '<td data-label="Mapel">' + esc(u.mapel || "-") + '</td>' +
+        '<td class="aksi-cell" data-label="Aksi">' +
           '<button class="aksi-edit" onclick="editPengguna(\'' + u.id + '\')">Edit</button>' +
           (iniSaya ? '' :
             '<button class="aksi-hapus" onclick="hapusPengguna(\'' + u.id + '\',\'' + nmAman + '\')">Hapus</button>') +
@@ -1368,10 +1595,10 @@ window.importPengguna = async (ev) => {
 
 window.hapusPengguna = async (id, nama) => {
   if (id === ME.uid) return toast("Tidak bisa menghapus akun sendiri.");
-  if (!confirm('Hapus data pengguna "' + nama + '"?\n\n' +
-    'Catatan: ini menghapus PERAN pengguna dari aplikasi, sehingga ia tidak ' +
-    'bisa masuk lagi. Akun login-nya di Firebase Authentication perlu dihapus ' +
-    'terpisah lewat Console bila ingin benar-benar dihapus.')) return;
+  if (!(await konfirmasi('Hapus Pengguna', 'Hapus data pengguna "' + nama + '"? ' +
+    'Ini menghapus peran pengguna dari aplikasi sehingga ia tidak bisa masuk lagi. ' +
+    'Akun login-nya di Firebase Authentication perlu dihapus terpisah lewat Console ' +
+    'bila ingin benar-benar dihapus.'))) return;
   try {
     await deleteDoc(doc(db, "pengguna", id));
     toast("Data pengguna dihapus.");
@@ -1440,8 +1667,7 @@ async function muatIsiJurnal(){
 
   const opsiKelas = '<option value="">-- pilih kelas --</option>' +
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '">' + esc(k.namaKelas) + '</option>').join("");
-  const opsiMapel = '<option value="">-- pilih mapel --</option>' +
-    mapelList.map(m => '<option value="' + esc(m.namaMapel) + '">' + esc(m.namaMapel) + '</option>').join("");
+  const opsiMapel = opsiMapelHTML(mapelList, "");
   const mapelGuru = (ME.role === "guru" && ME.mapel) ? ME.mapel : "";
   const hariIni = new Date().toISOString().slice(0,10);
 
@@ -1468,7 +1694,7 @@ async function muatIsiJurnal(){
         '<label>Dokumentasi Kegiatan (foto, opsional)</label>' +
         '<p class="info-kolom">Bisa langsung dari kamera HP atau pilih dari galeri. ' +
           'Foto besar otomatis dikompres untuk menghemat ruang.</p>' +
-        '<input type="file" id="jFoto" accept="image/*" capture="environment" onchange="pilihFotoJurnal(event)">' +
+        '<input type="file" id="jFoto" accept="image/*" onchange="pilihFotoJurnal(event)">' +
         '<div id="jFotoPreview"></div>' +
       '</div>' +
       '<button class="btn" id="jBtnSimpan" onclick="simpanJurnal()">Simpan Jurnal</button>' +
@@ -1641,6 +1867,9 @@ window.batalEditJurnal = () => {
 /* =====================  DAFTAR JURNAL  ===================== */
 async function muatDaftarJurnal(){
   _pilihJurnal = new Set();
+  // pastikan cache mapel terisi agar tampilan (kode) nama benar
+  try { if (!window._mapelSemua) window._mapelSemua = await ambilSemua("mapel", "namaMapel"); }
+  catch (e) { /* biarkan, labelMapel akan tampilkan nama saja */ }
   const bisaVerif = (ME.role === "admin" || ME.role === "kepsek");
   $("main").innerHTML =
     '<div class="card"><h2>Daftar Jurnal</h2>' +
@@ -1706,8 +1935,8 @@ function kartuJurnal(j, hak){
     .filter(a => String(a.status).toLowerCase() !== "hadir");
   const semuaHadir = takHadir.length === 0 && Array.isArray(j.absensi) && j.absensi.length > 0;
   const cekBox = bisaVerif ?
-    '<div class="jurnal-cek"><input type="checkbox" ' + (_pilihJurnal.has(j.id) ? "checked" : "") +
-      ' onclick="togglePilihJurnal(\'' + j.id + '\')"></div>' : '';
+    '<label class="jurnal-cek"><input type="checkbox" ' + (_pilihJurnal.has(j.id) ? "checked" : "") +
+      ' onclick="togglePilihJurnal(\'' + j.id + '\')"></label>' : '';
 
   const punyaFoto = j.fotoUrl && String(j.fotoUrl).startsWith("data:");
 
@@ -1731,9 +1960,9 @@ function kartuJurnal(j, hak){
   }
 
   return '<div class="jurnal-item">' +
-    cekBox +
     '<div class="head">' +
-      '<div><b>' + esc(j.mapel || "-") + '</b> \u2014 ' + esc(j.kelas || "-") +
+      cekBox +
+      '<div class="head-teks"><b>' + esc(labelMapel(j.mapel)) + '</b> \u2014 ' + esc(j.kelas || "-") +
         '<div class="info-baris">' + esc(j.nama || j.email) + ' \u00b7 ' + esc(j.tanggal || "-") +
         (j.jamKe ? ' \u00b7 Jam ' + esc(j.jamKe) : '') + '</div>' +
       '</div>' +
@@ -1789,7 +2018,7 @@ window.verifSatu = async (id, keputusan) => {
 window.verifMassal = async (keputusan) => {
   const ids = Array.from(_pilihJurnal);
   if (!ids.length) return;
-  if (!confirm(keputusan + " " + ids.length + " jurnal yang dipilih?")) return;
+  if (!(await konfirmasi(keputusan + " Jurnal", keputusan + " " + ids.length + " jurnal yang dipilih?", keputusan, false))) return;
   try {
     const stamp = new Date().toLocaleString("id-ID");
     const oleh = ME.nama || ME.email;
@@ -1810,7 +2039,7 @@ window.verifMassal = async (keputusan) => {
 
 /* ---- Hapus ---- */
 window.hapusJurnal = async (id) => {
-  if (!confirm("Hapus jurnal ini? Tindakan tidak bisa dibatalkan.")) return;
+  if (!(await konfirmasi("Hapus Jurnal", "Hapus jurnal ini? Tindakan tidak bisa dibatalkan."))) return;
   try {
     await deleteDoc(doc(db, "jurnal", id));
     _pilihJurnal.delete(id);
@@ -1821,7 +2050,7 @@ window.hapusJurnal = async (id) => {
 window.hapusMassalJurnal = async () => {
   const ids = Array.from(_pilihJurnal);
   if (!ids.length) return;
-  if (!confirm("Hapus " + ids.length + " jurnal yang dipilih? Tidak bisa dibatalkan.")) return;
+  if (!(await konfirmasi("Hapus Jurnal", "Hapus " + ids.length + " jurnal yang dipilih? Tidak bisa dibatalkan."))) return;
   try {
     let batch = writeBatch(db), n = 0;
     for (const id of ids) {
@@ -1900,6 +2129,12 @@ async function cariPengguna_(opsi){
     if (opsi.nama) {
       const byNama = semua.find(u => String(u.nama||"") === String(opsi.nama));
       if (byNama) return byNama;
+    }
+    // role + mapel: cari guru yang mengampu mapel tertentu (spesifik, tanpa fallback)
+    if (opsi.role && opsi.mapel) {
+      const byRoleMapel = semua.find(u => String(u.role||"") === opsi.role &&
+        String(u.mapel||"") === String(opsi.mapel));
+      return byRoleMapel || null;
     }
     if (opsi.role) {
       const byRole = semua.find(u => String(u.role||"") === opsi.role);
@@ -1992,7 +2227,7 @@ window.cetakJurnal = async (id) => {
     '<h2>Jurnal Mengajar</h2>' +
     '<div class="meta">' +
       '<b>Guru:</b> ' + esc(j.nama||j.email) + '<br>' +
-      '<b>Mapel:</b> ' + esc(j.mapel||"-") + ' &nbsp; <b>Kelas:</b> ' + esc(j.kelas||"-") + '<br>' +
+      '<b>Mapel:</b> ' + esc(labelMapel(j.mapel)) + ' &nbsp; <b>Kelas:</b> ' + esc(j.kelas||"-") + '<br>' +
       '<b>Tanggal:</b> ' + esc(j.tanggal||"-") + ' &nbsp; <b>Jam ke:</b> ' + esc(j.jamKe||"-") + '<br>' +
       '<b>Status:</b> ' + esc(j.status||"Menunggu") +
       (j.verifikasiOleh ? ' (oleh ' + esc(j.verifikasiOleh) + ')' : '') +
@@ -2007,6 +2242,615 @@ window.cetakJurnal = async (id) => {
   w.document.close();
   w.focus();
   setTimeout(() => { try { w.print(); } catch(e){} }, 400);
+};
+
+
+/* ============================================================
+   MODUL: NILAI  (pola tab + pertemuan)
+   Tab: Rata-rata | Nilai Harian | Nilai Tugas | Nilai Ulangan Harian
+   Model data: satu dokumen "nilai" = satu pertemuan untuk
+   kombinasi kelas+mapel+jenis, berisi nilai semua siswa.
+     { kelas, mapel, jenis, pertemuan:1, nilai:{ "nis1":85, "nis2":90 } }
+   ============================================================ */
+const TAB_NILAI = [
+  { key: "ratarata", label: "Rata-rata", jenis: null },
+  { key: "harian",   label: "Nilai Harian", jenis: "Harian" },
+  { key: "tugas",    label: "Nilai Tugas", jenis: "Tugas" },
+  { key: "uh",       label: "Nilai Ulangan Harian", jenis: "UH" },
+  { key: "sumatif",  label: "Nilai Sumatif", jenis: "Sumatif" },
+  { key: "rapor",    label: "Nilai Rapor", jenis: null }
+];
+let _nTab = "ratarata";
+let _nKelas = "", _nMapel = "";
+let _nSiswaKelas = [];     // siswa di kelas terpilih
+let _nDokumen = [];        // dokumen nilai untuk kelas+mapel terpilih
+
+async function muatNilai(){
+  let kelasList = [], mapelList = [];
+  try {
+    [kelasList, mapelList] = await Promise.all([
+      ambilSemua("kelas", "namaKelas"),
+      ambilSemua("mapel", "namaMapel")
+    ]);
+  } catch (e) {
+    $("main").innerHTML = '<div class="card"><div class="page-kosong">Gagal memuat data: ' +
+      esc(e.message) + '</div></div>'; return;
+  }
+  _kelasCache = kelasList;
+  window._mapelNilai = mapelList;
+
+  const opsiKelas = '<option value="">-- pilih kelas --</option>' +
+    kelasList.map(k => '<option value="' + esc(k.namaKelas) + '"' +
+      (k.namaKelas===_nKelas?" selected":"") + '>' + esc(k.namaKelas) + '</option>').join("");
+  const opsiMapel = opsiMapelHTML(mapelList, _nMapel);
+
+  const tabBtn = TAB_NILAI.map(t =>
+    '<button class="' + (t.key===_nTab?"active":"") + '" onclick="gantiTabNilai(\'' + t.key + '\')">' +
+    t.label + '</button>').join("");
+
+  $("main").innerHTML =
+    '<div class="card"><h2>Daftar Nilai Kelas</h2>' +
+      '<div class="row" style="align-items:flex-end">' +
+        '<div><label>Kelas</label><select id="nKelas" onchange="pilihKelasMapelNilai()">' + opsiKelas + '</select></div>' +
+        '<div><label>Mapel</label><select id="nMapel" onchange="pilihKelasMapelNilai()">' + opsiMapel + '</select></div>' +
+        '<div style="flex:0 0 auto;display:flex;gap:8px;align-items:flex-end">' +
+          '<button class="btn btn-green" style="margin-top:0" onclick="cetakNilai()">\uD83D\uDda8 Cetak Nilai</button>' +
+          '<button class="btn btn-ghost" style="margin-top:0" onclick="excelNilai()">\u2b07 Excel</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="nilai-sub" style="margin-top:14px">' + tabBtn + '</div>' +
+    '</div>' +
+    '<div id="nIsi"></div>';
+
+  if (_nKelas && _nMapel) await muatDataNilai(); else tampilPilihDulu();
+}
+
+function tampilPilihDulu(){
+  $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">' +
+    'Pilih kelas & mapel dulu untuk menampilkan nilai.</div></div>';
+}
+
+window.gantiTabNilai = (key) => {
+  _nTab = key;
+  document.querySelectorAll(".nilai-sub button").forEach(b => b.classList.remove("active"));
+  const idx = TAB_NILAI.findIndex(t => t.key===key);
+  const btns = document.querySelectorAll(".nilai-sub button");
+  if (btns[idx]) btns[idx].classList.add("active");
+  renderTabNilai();
+};
+
+window.pilihKelasMapelNilai = async () => {
+  _nKelas = $("nKelas").value; _nMapel = $("nMapel").value;
+  if (_nKelas && _nMapel) await muatDataNilai(); else tampilPilihDulu();
+};
+
+async function muatDataNilai(){
+  $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Memuat...</div></div>';
+  try {
+    if (!_siswaCache.length) _siswaCache = await ambilSemua("siswa", "namaSiswa");
+    _nSiswaKelas = _siswaCache.filter(s => s.kelas === _nKelas);
+    const semua = await ambilSemua("nilai");
+    _nDokumen = semua.filter(n => n.kelas===_nKelas && n.mapel===_nMapel);
+    renderTabNilai();
+  } catch (e) {
+    $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Gagal memuat: ' + esc(e.message) + '</div></div>';
+  }
+}
+
+function renderTabNilai(){
+  if (!_nKelas || !_nMapel) return tampilPilihDulu();
+  if (_nTab === "ratarata") return renderRataRata();
+  if (_nTab === "rapor") return renderRapor();
+  return renderPertemuan();   // harian / tugas / uh / sumatif
+}
+
+/* Ambil dokumen pertemuan untuk jenis aktif, urut nomor pertemuan */
+function dokJenis(jenis){
+  return _nDokumen.filter(d => d.jenis === jenis)
+    .sort((a,b) => Number(a.pertemuan) - Number(b.pertemuan));
+}
+function jenisAktif(){
+  const t = TAB_NILAI.find(x => x.key === _nTab);
+  return t ? t.jenis : null;
+}
+
+/* ============ TAB PERTEMUAN (Harian/Tugas/UH) ============ */
+function renderPertemuan(){
+  const jenis = jenisAktif();
+  const label = TAB_NILAI.find(t => t.key===_nTab).label;
+  const dok = dokJenis(jenis);
+  const bolehEdit = (ME.role === "guru" || ME.role === "admin");
+
+  let head = '<tr><th>No</th><th>NIS</th><th>Nama Siswa</th>';
+  if (!dok.length) {
+    head += '<th>Belum ada pertemuan</th>';
+  } else {
+    dok.forEach(d => {
+      head += '<th style="text-align:center">Pertemuan ' + esc(d.pertemuan) +
+        (bolehEdit ? '<br><button class="aksi-hapus" style="margin-top:4px" ' +
+          'onclick="hapusPertemuan(\'' + d.id + '\')">Hapus Kolom</button>' : '') + '</th>';
+    });
+  }
+  head += '</tr>';
+
+  let body = "";
+  _nSiswaKelas.forEach((s, i) => {
+    let sel = '<tr><td>' + (i+1) + '</td><td>' + esc(s.nis||"-") + '</td><td><b>' + esc(s.namaSiswa) + '</b></td>';
+    if (!dok.length) {
+      sel += '<td></td>';
+    } else {
+      dok.forEach(d => {
+        const val = (d.nilai && d.nilai[s.nis] != null) ? d.nilai[s.nis] : "";
+        sel += '<td style="text-align:center">' +
+          (bolehEdit ?
+            '<input class="input-nilai" type="number" min="0" max="100" value="' + esc(val) + '" ' +
+            'data-dok="' + d.id + '" data-nis="' + esc(s.nis) + '">' :
+            esc(val === "" ? "-" : val)) +
+          '</td>';
+      });
+    }
+    sel += '</tr>';
+    body += sel;
+  });
+
+  $("nIsi").innerHTML =
+    '<div class="card">' +
+      '<div class="toolbar" style="margin-bottom:14px">' +
+        '<h2 style="flex:1;min-width:180px;margin:0">Data ' + label + ' (' + dok.length + ' pertemuan)</h2>' +
+        (bolehEdit ? '<button class="rekap-tab active" style="background:var(--amber)" ' +
+          'onclick="tambahPertemuan()">+ Tambah Pertemuan</button>' : '') +
+      '</div>' +
+      '<div class="tabel-scroll"><table class="tabel-nilai" style="min-width:' +
+        (420 + dok.length*90) + 'px">' + head + body + '</table></div>' +
+      (dok.length && bolehEdit ?
+        '<button class="btn" onclick="simpanPertemuan()">Simpan Nilai</button>' +
+        '<div id="nMsg"></div>' : '') +
+    '</div>';
+}
+
+window.tambahPertemuan = async () => {
+  const jenis = jenisAktif();
+  const dok = dokJenis(jenis);
+  const nomorBaru = dok.length ? (Math.max(...dok.map(d => Number(d.pertemuan))) + 1) : 1;
+  try {
+    const ref = await addDoc(collection(db, "nilai"), {
+      kelas: _nKelas, mapel: _nMapel, jenis, pertemuan: nomorBaru, nilai: {}
+    });
+    // tambahkan ke cache lokal lalu render
+    _nDokumen.push({ id: ref.id, kelas:_nKelas, mapel:_nMapel, jenis, pertemuan:nomorBaru, nilai:{} });
+    toast("Pertemuan " + nomorBaru + " ditambahkan.");
+    renderPertemuan();
+  } catch (e) { toast("Gagal menambah: " + e.message); }
+};
+
+window.hapusPertemuan = async (id) => {
+  if (!(await konfirmasi("Hapus Kolom", "Hapus kolom pertemuan ini beserta nilainya?"))) return;
+  try {
+    await deleteDoc(doc(db, "nilai", id));
+    _nDokumen = _nDokumen.filter(d => d.id !== id);
+    toast("Pertemuan dihapus.");
+    renderPertemuan();
+  } catch (e) { toast("Gagal menghapus: " + e.message); }
+};
+
+window.simpanPertemuan = async () => {
+  const setMsg = (t, ok) => { if($("nMsg")) $("nMsg").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>'; };
+  // kumpulkan nilai dari input berdasarkan data-dok
+  const perDok = {};   // { docId: { nis: nilai } }
+  document.querySelectorAll("#nIsi input.input-nilai").forEach(inp => {
+    const docId = inp.getAttribute("data-dok");
+    const nis = inp.getAttribute("data-nis");
+    if (!docId) return;
+    if (!perDok[docId]) perDok[docId] = {};
+    const v = inp.value;
+    if (v !== "") perDok[docId][nis] = Math.max(0, Math.min(100, Number(v)));
+  });
+  try {
+    let batch = writeBatch(db), n = 0;
+    for (const docId in perDok) {
+      batch.update(doc(db, "nilai", docId), { nilai: perDok[docId] });
+      // perbarui cache lokal
+      const d = _nDokumen.find(x => x.id === docId);
+      if (d) d.nilai = perDok[docId];
+      n++;
+      if (n % 400 === 0) { await batch.commit(); batch = writeBatch(db); }
+    }
+    await batch.commit();
+    setMsg("Nilai tersimpan.", true);
+  } catch (e) { setMsg("Gagal menyimpan: " + e.message, false); }
+};
+
+/* ============ TAB RATA-RATA (dengan bobot) ============ */
+let _bobotNilai = { harian: 33, tugas: 33, uh: 34 };
+let _kkm = 70;   // batas nilai tuntas (bisa diatur)
+
+async function renderRataRata(){
+  $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Menghitung...</div></div>';
+  // muat bobot & KKM
+  try {
+    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    if (bsnap.exists()) {
+      const d = bsnap.data();
+      _bobotNilai = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
+      if (d.kkm != null) _kkm = Number(d.kkm);
+    }
+  } catch (e) { /* pakai default */ }
+
+  // hitung rata tiap jenis per siswa
+  function rataJenisSiswa(nis, jenis){
+    const dok = dokJenis(jenis);
+    const nilai = dok.map(d => (d.nilai && d.nilai[nis] != null) ? Number(d.nilai[nis]) : null)
+      .filter(v => v !== null && !isNaN(v));
+    if (!nilai.length) return null;
+    return nilai.reduce((a,b)=>a+b,0) / nilai.length;
+  }
+
+  const bobotTot = (_bobotNilai.harian + _bobotNilai.tugas + _bobotNilai.uh) || 100;
+  const baris = _nSiswaKelas.map(s => {
+    const rh = rataJenisSiswa(s.nis, "Harian");
+    const rt = rataJenisSiswa(s.nis, "Tugas");
+    const ru = rataJenisSiswa(s.nis, "UH");
+    let jml = 0, wpakai = 0;
+    if (rh!==null){ jml += rh*_bobotNilai.harian; wpakai += _bobotNilai.harian; }
+    if (rt!==null){ jml += rt*_bobotNilai.tugas; wpakai += _bobotNilai.tugas; }
+    if (ru!==null){ jml += ru*_bobotNilai.uh; wpakai += _bobotNilai.uh; }
+    const akhir = wpakai>0 ? (jml/wpakai) : null;
+    return { s, rh, rt, ru, akhir };
+  });
+
+  // statistik kelas
+  const akhirAda = baris.map(b => b.akhir).filter(v => v !== null);
+  const rataKelas = akhirAda.length ? (akhirAda.reduce((a,b)=>a+b,0)/akhirAda.length) : null;
+  const tertinggi = akhirAda.length ? Math.max(...akhirAda) : null;
+  const terendah  = akhirAda.length ? Math.min(...akhirAda) : null;
+  const f = v => v===null ? "-" : v.toFixed(1);
+
+  const bolehAturBobot = bisaEditMaster();
+
+  let tabel = '<div class="tabel-scroll"><table class="tabel-nilai" style="min-width:620px">' +
+    '<tr><th>No</th><th>NIS</th><th>Nama Siswa</th>' +
+    '<th style="text-align:center">Rata Harian</th>' +
+    '<th style="text-align:center">Rata Tugas</th>' +
+    '<th style="text-align:center">Rata Ulangan</th>' +
+    '<th style="text-align:center">Rata-Rata Akhir</th></tr>';
+  baris.forEach((b, i) => {
+    const tuntas = b.akhir!==null && b.akhir>=_kkm;
+    tabel += '<tr><td>' + (i+1) + '</td><td>' + esc(b.s.nis||"-") + '</td>' +
+      '<td><b>' + esc(b.s.namaSiswa) + '</b></td>' +
+      '<td style="text-align:center">' + f(b.rh) + '</td>' +
+      '<td style="text-align:center">' + f(b.rt) + '</td>' +
+      '<td style="text-align:center">' + f(b.ru) + '</td>' +
+      '<td style="text-align:center" class="nilai-akhir ' + (b.akhir===null?"":(tuntas?"tuntas":"belum")) + '">' +
+        f(b.akhir) + '</td></tr>';
+  });
+  tabel += '</table></div>';
+
+  $("nIsi").innerHTML =
+    '<div class="stats">' +
+      '<div class="stat"><div class="lbl">RATA-RATA KELAS</div><div class="num">' + f(rataKelas) + '</div></div>' +
+      '<div class="stat" style="background:var(--green-bg)"><div class="lbl" style="color:var(--green)">NILAI TERTINGGI</div>' +
+        '<div class="num" style="color:var(--green)">' + f(tertinggi) + '</div></div>' +
+      '<div class="stat" style="background:var(--red-bg)"><div class="lbl" style="color:var(--red)">NILAI TERENDAH</div>' +
+        '<div class="num" style="color:var(--red)">' + f(terendah) + '</div></div>' +
+    '</div>' +
+    (bolehAturBobot ?
+      '<div class="card"><h2>Atur Bobot & Batas Tuntas (KKM)</h2>' +
+        '<p class="info-kolom">Persentase untuk menghitung rata-rata akhir (total sebaiknya 100%), ' +
+        'dan batas nilai tuntas (KKM). Nilai \u2265 KKM ditandai hijau (tuntas), di bawahnya merah.</p>' +
+        '<div class="row">' +
+          '<div><label>Harian (%)</label><input id="bHarian" type="number" min="0" max="100" value="' + _bobotNilai.harian + '" oninput="hitungTotalBobotN()"></div>' +
+          '<div><label>Tugas (%)</label><input id="bTugas" type="number" min="0" max="100" value="' + _bobotNilai.tugas + '" oninput="hitungTotalBobotN()"></div>' +
+          '<div><label>Ulangan Harian (%)</label><input id="bUh" type="number" min="0" max="100" value="' + _bobotNilai.uh + '" oninput="hitungTotalBobotN()"></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Batas Tuntas / KKM</label><input id="bKkm" type="number" min="0" max="100" value="' + _kkm + '"></div>' +
+          '<div></div><div></div>' +
+        '</div>' +
+        '<div class="bobot-total" id="bobotTotalN"></div>' +
+        '<button class="btn" onclick="simpanBobotN()">Simpan Pengaturan</button>' +
+        '<div id="bMsgN"></div>' +
+      '</div>' : '') +
+    '<div class="card"><h2>Rincian Nilai Siswa</h2>' + tabel +
+      '<p class="info-kolom" style="margin-top:10px">Bobot: Harian ' + _bobotNilai.harian +
+      '% \u00b7 Tugas ' + _bobotNilai.tugas + '% \u00b7 UH ' + _bobotNilai.uh + '%. ' +
+      'Batas tuntas (KKM) = ' + _kkm + '. Hijau = tuntas (\u2265 ' + _kkm + '), merah = belum.</p>' +
+    '</div>';
+  if (bolehAturBobot) hitungTotalBobotN();
+}
+
+window.hitungTotalBobotN = () => {
+  const h = Number($("bHarian").value)||0, t = Number($("bTugas").value)||0, u = Number($("bUh").value)||0;
+  const total = h+t+u;
+  const box = $("bobotTotalN");
+  box.textContent = "Total: " + total + "%" + (total!==100 ? " (sebaiknya 100%)" : "");
+  box.className = "bobot-total " + (total===100 ? "ok" : "warn");
+};
+
+window.simpanBobotN = async () => {
+  const setMsg = (t, ok) => { $("bMsgN").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>'; };
+  const kkmVal = Number($("bKkm").value);
+  const bobot = {
+    harian: Number($("bHarian").value)||0,
+    tugas: Number($("bTugas").value)||0,
+    uh: Number($("bUh").value)||0,
+    kkm: (isNaN(kkmVal) ? 70 : Math.max(0, Math.min(100, kkmVal)))
+  };
+  try {
+    // gabungkan dengan bobot rapor yang mungkin sudah ada agar tidak tertimpa
+    const snap = await getDoc(doc(db, "bobot", "global"));
+    const lama = snap.exists() ? snap.data() : {};
+    await setDoc(doc(db, "bobot", "global"), { ...lama, ...bobot });
+    _bobotNilai = { harian: bobot.harian, tugas: bobot.tugas, uh: bobot.uh };
+    _kkm = bobot.kkm;
+    setMsg("Pengaturan tersimpan. Menghitung ulang...", true);
+    setTimeout(() => renderRataRata(), 500);
+  } catch (e) { setMsg("Gagal menyimpan: " + e.message, false); }
+};
+
+
+/* ============ TAB RAPOR ============
+   Nilai Rapor = gabungan berbobot dari:
+     - "Rata-Rata Akhir" (hasil tab Rata-rata: Harian/Tugas/UH berbobot)
+     - "Sumatif" (rata-rata dokumen jenis Sumatif)
+   Bobot rapor diatur sendiri (default 50:50). */
+let _bobotRapor = { rataRata: 50, sumatif: 50 };
+let _kkmRapor = 70;   // batas tuntas khusus rapor
+
+async function renderRapor(){
+  $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Menghitung...</div></div>';
+  // muat bobot rata-rata, KKM, dan bobot rapor
+  try {
+    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    if (bsnap.exists()) {
+      const d = bsnap.data();
+      _bobotNilai = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
+      if (d.kkm != null) _kkm = Number(d.kkm);
+      // KKM rapor terpisah; bila belum pernah diset, ikuti KKM umum
+      _kkmRapor = (d.kkmRapor != null) ? Number(d.kkmRapor) : _kkm;
+      if (d.raporRata != null || d.raporSumatif != null) {
+        _bobotRapor = { rataRata: d.raporRata ?? 50, sumatif: d.raporSumatif ?? 50 };
+      }
+    }
+  } catch (e) { /* pakai default */ }
+
+  function rataJenisSiswa(nis, jenis){
+    const dok = dokJenis(jenis);
+    const nilai = dok.map(d => (d.nilai && d.nilai[nis] != null) ? Number(d.nilai[nis]) : null)
+      .filter(v => v !== null && !isNaN(v));
+    if (!nilai.length) return null;
+    return nilai.reduce((a,b)=>a+b,0) / nilai.length;
+  }
+  // Rata-Rata Akhir (sama seperti tab Rata-rata)
+  function rataRataAkhir(nis){
+    const rh = rataJenisSiswa(nis,"Harian"), rt = rataJenisSiswa(nis,"Tugas"), ru = rataJenisSiswa(nis,"UH");
+    let jml=0, w=0;
+    if (rh!==null){ jml+=rh*_bobotNilai.harian; w+=_bobotNilai.harian; }
+    if (rt!==null){ jml+=rt*_bobotNilai.tugas; w+=_bobotNilai.tugas; }
+    if (ru!==null){ jml+=ru*_bobotNilai.uh; w+=_bobotNilai.uh; }
+    return w>0 ? jml/w : null;
+  }
+
+  const wrTot = (_bobotRapor.rataRata + _bobotRapor.sumatif) || 100;
+  const baris = _nSiswaKelas.map(s => {
+    const rata = rataRataAkhir(s.nis);
+    const sum = rataJenisSiswa(s.nis, "Sumatif");
+    let jml=0, w=0;
+    if (rata!==null){ jml += rata*_bobotRapor.rataRata; w += _bobotRapor.rataRata; }
+    if (sum!==null){ jml += sum*_bobotRapor.sumatif; w += _bobotRapor.sumatif; }
+    const rapor = w>0 ? jml/w : null;
+    return { s, rata, sum, rapor };
+  });
+
+  const raporAda = baris.map(b => b.rapor).filter(v => v!==null);
+  const rataKelas = raporAda.length ? raporAda.reduce((a,b)=>a+b,0)/raporAda.length : null;
+  const tertinggi = raporAda.length ? Math.max(...raporAda) : null;
+  const terendah  = raporAda.length ? Math.min(...raporAda) : null;
+  const f = v => v===null ? "-" : v.toFixed(1);
+  const bolehAtur = bisaEditMaster();
+
+  let tabel = '<div class="tabel-scroll"><table class="tabel-nilai" style="min-width:560px">' +
+    '<tr><th>No</th><th>NIS</th><th>Nama Siswa</th>' +
+    '<th style="text-align:center">Rata-Rata</th>' +
+    '<th style="text-align:center">Sumatif</th>' +
+    '<th style="text-align:center">Nilai Rapor</th></tr>';
+  baris.forEach((b, i) => {
+    const tuntas = b.rapor!==null && b.rapor>=_kkmRapor;
+    tabel += '<tr><td>' + (i+1) + '</td><td>' + esc(b.s.nis||"-") + '</td>' +
+      '<td><b>' + esc(b.s.namaSiswa) + '</b></td>' +
+      '<td style="text-align:center">' + f(b.rata) + '</td>' +
+      '<td style="text-align:center">' + f(b.sum) + '</td>' +
+      '<td style="text-align:center" class="nilai-akhir ' + (b.rapor===null?"":(tuntas?"tuntas":"belum")) + '">' +
+        f(b.rapor) + '</td></tr>';
+  });
+  tabel += '</table></div>';
+
+  $("nIsi").innerHTML =
+    '<div class="stats">' +
+      '<div class="stat"><div class="lbl">RATA-RATA KELAS</div><div class="num">' + f(rataKelas) + '</div></div>' +
+      '<div class="stat" style="background:var(--green-bg)"><div class="lbl" style="color:var(--green)">NILAI TERTINGGI</div>' +
+        '<div class="num" style="color:var(--green)">' + f(tertinggi) + '</div></div>' +
+      '<div class="stat" style="background:var(--red-bg)"><div class="lbl" style="color:var(--red)">NILAI TERENDAH</div>' +
+        '<div class="num" style="color:var(--red)">' + f(terendah) + '</div></div>' +
+    '</div>' +
+    (bolehAtur ?
+      '<div class="card"><h2>Atur Bobot & Batas Tuntas Rapor</h2>' +
+        '<p class="info-kolom">Nilai Rapor = gabungan berbobot dari Rata-Rata (Harian/Tugas/UH) dan Sumatif ' +
+        '(total sebaiknya 100%), serta batas tuntas (KKM) khusus rapor.</p>' +
+        '<div class="row">' +
+          '<div><label>Bobot Rata-Rata (%)</label><input id="rRata" type="number" min="0" max="100" value="' + _bobotRapor.rataRata + '" oninput="hitungTotalBobotRapor()"></div>' +
+          '<div><label>Bobot Sumatif (%)</label><input id="rSum" type="number" min="0" max="100" value="' + _bobotRapor.sumatif + '" oninput="hitungTotalBobotRapor()"></div>' +
+        '</div>' +
+        '<div class="row">' +
+          '<div><label>Batas Tuntas / KKM Rapor</label><input id="rKkm" type="number" min="0" max="100" value="' + _kkmRapor + '"></div>' +
+          '<div></div>' +
+        '</div>' +
+        '<div class="bobot-total" id="bobotTotalRapor"></div>' +
+        '<button class="btn" onclick="simpanBobotRapor()">Simpan Pengaturan Rapor</button>' +
+        '<div id="rMsg"></div>' +
+      '</div>' : '') +
+    '<div class="card"><h2>Rincian Nilai Rapor</h2>' + tabel +
+      '<p class="info-kolom" style="margin-top:10px">Bobot Rapor: Rata-Rata ' + _bobotRapor.rataRata +
+      '% \u00b7 Sumatif ' + _bobotRapor.sumatif + '%. Batas tuntas (KKM) rapor = ' + _kkmRapor + '. ' +
+      'Kolom "Rata-Rata" diambil dari tab Rata-rata (gabungan Harian/Tugas/UH). ' +
+      'Hijau = tuntas (\u2265 ' + _kkmRapor + '), merah = belum.</p>' +
+    '</div>';
+  if (bolehAtur) hitungTotalBobotRapor();
+}
+
+window.hitungTotalBobotRapor = () => {
+  const r = Number($("rRata").value)||0, s = Number($("rSum").value)||0;
+  const total = r+s;
+  const box = $("bobotTotalRapor");
+  box.textContent = "Total: " + total + "%" + (total!==100 ? " (sebaiknya 100%)" : "");
+  box.className = "bobot-total " + (total===100 ? "ok" : "warn");
+};
+
+window.simpanBobotRapor = async () => {
+  const setMsg = (t, ok) => { $("rMsg").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>'; };
+  const raporRata = Number($("rRata").value)||0;
+  const raporSumatif = Number($("rSum").value)||0;
+  const kkmR = Number($("rKkm").value);
+  const kkmRapor = isNaN(kkmR) ? 70 : Math.max(0, Math.min(100, kkmR));
+  try {
+    const snap = await getDoc(doc(db, "bobot", "global"));
+    const lama = snap.exists() ? snap.data() : {};
+    await setDoc(doc(db, "bobot", "global"), { ...lama, raporRata, raporSumatif, kkmRapor });
+    _bobotRapor = { rataRata: raporRata, sumatif: raporSumatif };
+    _kkmRapor = kkmRapor;
+    setMsg("Pengaturan rapor tersimpan. Menghitung ulang...", true);
+    setTimeout(() => renderRapor(), 500);
+  } catch (e) { setMsg("Gagal menyimpan: " + e.message, false); }
+};
+
+
+/* ============ HITUNG REKAP LENGKAP (untuk cetak & excel) ============ */
+async function hitungRekapNilaiLengkap(){
+  // muat bobot & kkm terbaru
+  let bobot = { harian:33, tugas:33, uh:34 }, kkm = 70;
+  let bRapor = { rataRata:50, sumatif:50 }, kkmRapor = 70;
+  try {
+    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    if (bsnap.exists()) {
+      const d = bsnap.data();
+      bobot = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
+      if (d.kkm != null) kkm = Number(d.kkm);
+      bRapor = { rataRata: d.raporRata ?? 50, sumatif: d.raporSumatif ?? 50 };
+      kkmRapor = (d.kkmRapor != null) ? Number(d.kkmRapor) : kkm;
+    }
+  } catch (e) { /* default */ }
+
+  function rataJenis(nis, jenis){
+    const arr = dokJenis(jenis).map(d => (d.nilai && d.nilai[nis]!=null) ? Number(d.nilai[nis]) : null)
+      .filter(v => v!==null && !isNaN(v));
+    return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  }
+
+  const baris = _nSiswaKelas.map(s => {
+    const rh = rataJenis(s.nis,"Harian"), rt = rataJenis(s.nis,"Tugas"),
+          ru = rataJenis(s.nis,"UH"), sum = rataJenis(s.nis,"Sumatif");
+    let jml=0,w=0;
+    if (rh!==null){ jml+=rh*bobot.harian; w+=bobot.harian; }
+    if (rt!==null){ jml+=rt*bobot.tugas; w+=bobot.tugas; }
+    if (ru!==null){ jml+=ru*bobot.uh; w+=bobot.uh; }
+    const rataAkhir = w>0 ? jml/w : null;
+    let jr=0,wr=0;
+    if (rataAkhir!==null){ jr+=rataAkhir*bRapor.rataRata; wr+=bRapor.rataRata; }
+    if (sum!==null){ jr+=sum*bRapor.sumatif; wr+=bRapor.sumatif; }
+    const rapor = wr>0 ? jr/wr : null;
+    return { nis:s.nis, nama:s.namaSiswa, rh, rt, ru, rataAkhir, sum, rapor };
+  });
+  return { baris, bobot, kkm, bRapor, kkmRapor };
+}
+
+/* ============ CETAK NILAI ============ */
+window.cetakNilai = async () => {
+  if (!_nKelas || !_nMapel) return toast("Pilih kelas & mapel dulu.");
+  const { baris, bobot, kkm, bRapor, kkmRapor } = await hitungRekapNilaiLengkap();
+  const f = v => v===null ? "-" : v.toFixed(1);
+  const mapelLabel = labelMapel(_nMapel);
+
+  // Identitas guru: cari guru yang mengampu mapel ini; bila tak ada, pakai yang login.
+  let guru = null;
+  try { guru = await cariPengguna_({ role: "guru", mapel: _nMapel }); } catch (e) {}
+  const namaGuru = (guru && guru.nama) ? guru.nama : (ME.nama || ME.email || "(Guru)");
+  const nipGuru  = (guru && guru.nip)  ? guru.nip  : (ME.nip || "");
+  const tglTtd   = tglHariIni_();
+
+  let rows = baris.map((b,i) =>
+    '<tr><td>' + (i+1) + '</td><td>' + esc(b.nis||"-") + '</td><td>' + esc(b.nama) + '</td>' +
+    '<td>' + f(b.rh) + '</td><td>' + f(b.rt) + '</td><td>' + f(b.ru) + '</td>' +
+    '<td>' + f(b.rataAkhir) + '</td><td>' + f(b.sum) + '</td>' +
+    '<td><b>' + f(b.rapor) + '</b></td>' +
+    '<td>' + (b.rapor===null ? "-" : (b.rapor>=kkmRapor ? "Tuntas" : "Belum")) + '</td></tr>'
+  ).join("");
+
+  // Blok tanda tangan: HANYA guru mapel, di kolom kanan.
+  const blokTtd =
+    '<table class="ttd">' +
+      '<tr>' +
+        '<td class="kolom-ttd"></td>' +
+        '<td class="kolom-ttd">' + esc(tglTtd) + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td class="kolom-ttd"></td>' +
+        '<td class="kolom-ttd">Guru Mata Pelajaran,</td>' +
+      '</tr>' +
+      '<tr class="spasi-ttd"><td></td><td></td></tr>' +
+      '<tr>' +
+        '<td class="kolom-ttd"></td>' +
+        '<td class="kolom-ttd"><span class="nama-ttd">' + esc(namaGuru) + '</span>' +
+          (nipGuru ? '<br><span class="nip-ttd">NIP. ' + esc(nipGuru) + '</span>' : '') + '</td>' +
+      '</tr>' +
+    '</table>';
+
+  const w = window.open("", "_blank");
+  w.document.write(
+    '<html><head><title>Nilai ' + esc(mapelLabel) + ' - ' + esc(_nKelas) + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:24px;color:#000;font-size:12px}' +
+    'h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px}' +
+    'th,td{border:1px solid #999;padding:4px 6px;text-align:center;font-size:11px}' +
+    'th{background:#eee}td:nth-child(3){text-align:left}.meta{margin:8px 0;line-height:1.6}' +
+    '.ttd{margin-top:48px;border:none}' +
+    '.ttd td{border:none;padding:0 0 2px;vertical-align:top;width:50%;font-size:13px}' +
+    '.ttd .kolom-ttd{text-align:left}' +
+    '.ttd .spasi-ttd td{height:60px}' +
+    '.ttd .nama-ttd{font-weight:bold;text-decoration:underline}' +
+    '.ttd .nip-ttd{font-size:11px}' +
+    '</style></head><body>' +
+    '<h2>Daftar Nilai Siswa</h2>' +
+    '<div class="meta"><b>Guru:</b> ' + esc(namaGuru) +
+      (nipGuru ? ' &nbsp; <b>NIP:</b> ' + esc(nipGuru) : '') + '<br>' +
+      '<b>Mapel:</b> ' + esc(mapelLabel) + ' &nbsp; <b>Kelas:</b> ' + esc(_nKelas) + '<br>' +
+      '<b>Bobot Nilai:</b> Harian ' + bobot.harian + '%, Tugas ' + bobot.tugas + '%, UH ' + bobot.uh + '% &nbsp; ' +
+      '<b>Bobot Rapor:</b> Rata-Rata ' + bRapor.rataRata + '%, Sumatif ' + bRapor.sumatif + '% &nbsp; ' +
+      '<b>KKM Rapor:</b> ' + kkmRapor + '</div>' +
+    '<table><tr><th>No</th><th>NIS</th><th>Nama</th><th>Harian</th><th>Tugas</th><th>UH</th>' +
+      '<th>Rata-Rata</th><th>Sumatif</th><th>Rapor</th><th>Ket</th></tr>' + rows + '</table>' +
+    blokTtd +
+    '</body></html>');
+  w.document.close(); w.focus();
+  setTimeout(() => { try { w.print(); } catch(e){} }, 400);
+};
+
+/* ============ EXPORT EXCEL NILAI ============ */
+window.excelNilai = async () => {
+  if (!_nKelas || !_nMapel) return toast("Pilih kelas & mapel dulu.");
+  const { baris, kkmRapor } = await hitungRekapNilaiLengkap();
+  const bulat = v => v===null ? "" : Number(v.toFixed(1));
+  const data = baris.map((b,i) => ({
+    "No": i+1, "NIS": b.nis||"", "Nama": b.nama,
+    "Rata Harian": bulat(b.rh), "Rata Tugas": bulat(b.rt), "Rata UH": bulat(b.ru),
+    "Rata-Rata Akhir": bulat(b.rataAkhir), "Sumatif": bulat(b.sum),
+    "Nilai Rapor": bulat(b.rapor),
+    "Keterangan": b.rapor===null ? "" : (b.rapor>=kkmRapor ? "Tuntas" : "Belum Tuntas")
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws["!cols"] = [{wch:5},{wch:12},{wch:24},{wch:11},{wch:11},{wch:10},{wch:14},{wch:10},{wch:12},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Nilai");
+  const namaFile = "Nilai-" + _nKelas.replace(/\s+/g,"") + "-" + _nMapel.replace(/\s+/g,"") + ".xlsx";
+  XLSX.writeFile(wb, namaFile);
+  toast("Excel diunduh.");
 };
 
 </script>
