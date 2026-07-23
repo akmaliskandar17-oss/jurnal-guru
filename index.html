@@ -295,6 +295,42 @@ th.k-Alpa  { color: var(--red); }
 /* Kartu jurnal */
 .jurnal-item .info-baris { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 .jurnal-item .kehadiran { font-size: 12px; color: var(--muted); margin-top: 6px; }
+/* Tombol aksi di kartu jurnal */
+.jbtn { border: none; padding: 7px 13px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600; margin: 0; }
+.jbtn-ghost { background: #eef1f8; color: var(--ink); }
+.jbtn-ghost:hover { background: #e0e5f2; }
+.jbtn-edit { background: #eef1f8; color: var(--ink); }
+.jbtn-hapus { background: var(--red); color: #fff; }
+.jbtn-hapus:hover { background: #a51f1f; }
+.jbtn-setuju { background: var(--green); color: #fff; }
+.jbtn-setuju:hover { background: #237032; }
+.jbtn-tolak { background: var(--red); color: #fff; }
+.jbtn-tolak:hover { background: #a51f1f; }
+.jurnal-item .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.jurnal-item .actions-verif { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+.jurnal-item { position: relative; }
+.jurnal-cek { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); }
+.jurnal-cek input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+.jurnal-item .head { padding-top: 8px; }
+.semua-hadir { color: var(--green); font-size: 13px; margin-top: 4px; }
+.tidak-hadir { color: var(--warn, #b3541e); font-size: 13px; margin-top: 4px; }
+/* Bulkbar jurnal */
+.jbulk { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap; margin-bottom: 16px; padding: 4px 2px; }
+.jbulk-kiri { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.jbulk-kiri input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+.jbulk-kanan { display: flex; gap: 8px; flex-wrap: wrap; }
+.jbulk-kanan button { border: none; padding: 9px 16px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; font-weight: 600; margin: 0; color: #fff; }
+.jbulk-kanan .b-setuju { background: var(--green); }
+.jbulk-kanan .b-tolak { background: var(--red); }
+.jbulk-kanan .b-hapus { background: #7a1010; }
+.jbulk-kanan button:disabled { opacity: .4; cursor: not-allowed; }
+/* Foto dokumentasi */
+.foto-preview { max-width: 220px; border-radius: 8px; border: 1px solid var(--line);
+  margin-top: 10px; display: block; }
+.foto-dok-besar { max-width: 100%; border-radius: 8px; }
 </style>
 </head>
 <body>
@@ -364,13 +400,14 @@ let _penggunaCache = []; // cache daftar pengguna (dipakai untuk edit)
 let _editUserId = null;  // null = mode tambah pengguna; ada isi = mode edit
 
 const MENU = {
-  admin : ["beranda","jurnal","verifikasi","nilai","siswa","kelas","mapel","pengguna","pengaturan"],
-  kepsek: ["beranda","verifikasi","nilai"],
-  guru  : ["beranda","jurnal","nilai"]
+  admin : ["beranda","isijurnal","daftarjurnal","nilai","siswa","kelas","mapel","pengguna","pengaturan"],
+  kepsek: ["beranda","daftarjurnal","nilai"],
+  guru  : ["beranda","isijurnal","daftarjurnal","nilai"]
 };
 const LABEL = {
-  beranda:"Beranda", jurnal:"Jurnal", verifikasi:"Verifikasi", nilai:"Nilai",
-  siswa:"Siswa", kelas:"Kelas", mapel:"Mapel", pengguna:"Pengguna", pengaturan:"Pengaturan"
+  beranda:"Beranda", isijurnal:"Isi Jurnal", daftarjurnal:"Daftar Jurnal",
+  nilai:"Nilai", siswa:"Siswa", kelas:"Kelas", mapel:"Mapel",
+  pengguna:"Pengguna", pengaturan:"Pengaturan"
 };
 const namaRole = r => ({admin:"Admin", kepsek:"Kepala Sekolah", guru:"Guru"}[r] || r);
 const bisaEditMaster = () => ME && ME.role === "admin";
@@ -457,7 +494,8 @@ function buka(key, btn){
   if (key === "mapel")   return muatMapel();
   if (key === "siswa")   return muatSiswa();
   if (key === "pengguna") return muatPengguna();
-  if (key === "jurnal")  return muatJurnal();
+  if (key === "isijurnal")   return muatIsiJurnal();
+  if (key === "daftarjurnal") return muatDaftarJurnal();
   return tampilBelumDibangun(key);
 }
 
@@ -1290,17 +1328,52 @@ window.hapusPengguna = async (id, nama) => {
 
 
 /* ============================================================
-   MODUL: JURNAL
-   Guru mengisi jurnal mengajar + absensi per siswa.
-   Guru melihat jurnalnya sendiri; admin/kepsek melihat semua.
+   MODUL JURNAL (dipisah: Isi Jurnal & Daftar Jurnal)
    ============================================================ */
-let _absenSiswa = [];   // daftar siswa kelas terpilih untuk absensi
-let _jurnalCache = [];
+let _absenSiswa = [];    // siswa kelas terpilih untuk absensi
+let _jurnalCache = [];   // hasil query terakhir daftar jurnal
+let _fotoDataUrl = "";   // foto dokumentasi terkompres (base64)
+let _editJurnalId = null;
+let _pilihJurnal = new Set();
 
-async function muatJurnal(){
+/* ---- Kompres foto di browser sebelum disimpan ----
+   Memperkecil dimensi & kualitas agar muat di Firestore (<1MB/dokumen). */
+function kompresFoto(file, maxLebar = 1000, kualitas = 0.7){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Gagal membaca file"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Gagal memuat gambar"));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxLebar) { height = Math.round(height * maxLebar / width); width = maxLebar; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+        // JPEG selalu, untuk ukuran kecil
+        const dataUrl = canvas.toDataURL("image/jpeg", kualitas);
+        resolve(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* =====================  ISI JURNAL  ===================== */
+async function muatIsiJurnal(){
   const bolehIsi = (ME.role === "guru" || ME.role === "admin");
+  if (!bolehIsi) {
+    $("main").innerHTML = '<div class="card"><div class="page-kosong">' +
+      'Menu ini untuk guru. Silakan buka Daftar Jurnal.</div></div>';
+    return;
+  }
 
-  // Ambil kelas & mapel untuk dropdown
+  _fotoDataUrl = "";
+  _editJurnalId = null;
+
   let kelasList = [], mapelList = [];
   try {
     [kelasList, mapelList] = await Promise.all([
@@ -1316,44 +1389,68 @@ async function muatJurnal(){
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '">' + esc(k.namaKelas) + '</option>').join("");
   const opsiMapel = '<option value="">-- pilih mapel --</option>' +
     mapelList.map(m => '<option value="' + esc(m.namaMapel) + '">' + esc(m.namaMapel) + '</option>').join("");
-
-  // mapel default: kalau guru punya mapel tetap, pakai itu
   const mapelGuru = (ME.role === "guru" && ME.mapel) ? ME.mapel : "";
-
   const hariIni = new Date().toISOString().slice(0,10);
 
   $("main").innerHTML =
-    (bolehIsi ?
-      '<div class="card"><h2>Isi Jurnal Mengajar</h2>' +
-        (kelasList.length ? '' :
-          '<div class="warn" style="margin-bottom:12px">Belum ada kelas. Minta admin menambah kelas dulu.</div>') +
-        '<div class="row">' +
-          '<div><label>Tanggal</label><input id="jTanggal" type="date" value="' + hariIni + '"></div>' +
-          '<div><label>Jam Ke-</label><input id="jJam" placeholder="mis. 1-2"></div>' +
-        '</div>' +
-        '<div class="row">' +
-          '<div><label>Kelas</label><select id="jKelas" onchange="muatAbsensi()">' + opsiKelas + '</select></div>' +
-          '<div><label>Mapel</label><select id="jMapel">' + opsiMapel + '</select></div>' +
-        '</div>' +
-        '<label>Materi / Kegiatan</label>' +
-        '<textarea id="jMateri" placeholder="Materi yang diajarkan"></textarea>' +
-        '<label>Catatan (opsional)</label>' +
-        '<textarea id="jCatatan" placeholder="Catatan tambahan"></textarea>' +
-        '<div id="absenArea"><p class="info-kolom" style="margin-top:14px">' +
-          'Pilih kelas dulu untuk menampilkan daftar absensi siswa.</p></div>' +
-        '<button class="btn" id="jBtnSimpan" onclick="simpanJurnal()">Simpan Jurnal</button>' +
-        '<div id="jMsg"></div>' +
-      '</div>' : '') +
-    '<div class="card"><h2 id="jJudulDaftar">Daftar Jurnal</h2>' +
-      '<div id="jurnalList"><div class="page-kosong">Memuat...</div></div></div>';
+    '<div class="card"><h2 id="jJudulForm">Isi Jurnal Mengajar</h2>' +
+      (kelasList.length ? '' :
+        '<div class="warn" style="margin-bottom:12px">Belum ada kelas. Minta admin menambah kelas dulu.</div>') +
+      '<div class="row">' +
+        '<div><label>Tanggal</label><input id="jTanggal" type="date" value="' + hariIni + '"></div>' +
+        '<div><label>Jam Ke-</label><input id="jJam" placeholder="mis. 1-2"></div>' +
+      '</div>' +
+      '<div class="row">' +
+        '<div><label>Kelas</label><select id="jKelas" onchange="muatAbsensi()">' + opsiKelas + '</select></div>' +
+        '<div><label>Mapel</label><select id="jMapel">' + opsiMapel + '</select></div>' +
+      '</div>' +
+      '<label>Materi / Kegiatan</label>' +
+      '<textarea id="jMateri" placeholder="Materi yang diajarkan"></textarea>' +
+      '<label>Catatan (opsional)</label>' +
+      '<textarea id="jCatatan" placeholder="Catatan tambahan"></textarea>' +
+      '<div id="absenArea"><p class="info-kolom" style="margin-top:14px">' +
+        'Pilih kelas dulu untuk menampilkan daftar absensi siswa.</p></div>' +
+      // ---- Dokumentasi foto ----
+      '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">' +
+        '<label>Dokumentasi Kegiatan (foto, opsional)</label>' +
+        '<p class="info-kolom">Bisa langsung dari kamera HP atau pilih dari galeri. ' +
+          'Foto besar otomatis dikompres untuk menghemat ruang.</p>' +
+        '<input type="file" id="jFoto" accept="image/*" capture="environment" onchange="pilihFotoJurnal(event)">' +
+        '<div id="jFotoPreview"></div>' +
+      '</div>' +
+      '<button class="btn" id="jBtnSimpan" onclick="simpanJurnal()">Simpan Jurnal</button>' +
+      '<button class="btn btn-ghost" id="jBtnBatal" style="margin-left:8px;display:none" ' +
+        'onclick="batalEditJurnal()">Batal Edit</button>' +
+      '<div id="jMsg"></div>' +
+    '</div>';
 
-  // set mapel default guru
   if (mapelGuru && $("jMapel")) $("jMapel").value = mapelGuru;
-
-  await renderJurnal();
 }
 
-/* ---- Muat daftar siswa kelas terpilih untuk absensi ---- */
+window.pilihFotoJurnal = async (ev) => {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  const prev = $("jFotoPreview");
+  prev.innerHTML = '<p class="info-kolom">Memproses foto...</p>';
+  try {
+    _fotoDataUrl = await kompresFoto(file);
+    // perkiraan ukuran: panjang base64 * 3/4
+    const kb = Math.round(_fotoDataUrl.length * 0.75 / 1024);
+    prev.innerHTML = '<img src="' + _fotoDataUrl + '" class="foto-preview" alt="pratinjau">' +
+      '<p class="info-kolom" style="margin-top:6px">Ukuran ~' + kb + ' KB. ' +
+      '<button class="jbtn jbtn-ghost" onclick="hapusFotoJurnal()">Hapus foto</button></p>';
+  } catch (e) {
+    prev.innerHTML = '<div class="msg err">Gagal memproses foto: ' + esc(e.message) + '</div>';
+    _fotoDataUrl = "";
+  }
+};
+window.hapusFotoJurnal = () => {
+  _fotoDataUrl = "";
+  if ($("jFoto")) $("jFoto").value = "";
+  if ($("jFotoPreview")) $("jFotoPreview").innerHTML = "";
+};
+
+/* ---- Absensi ---- */
 window.muatAbsensi = async () => {
   const kelas = $("jKelas") ? $("jKelas").value : "";
   const area = $("absenArea");
@@ -1365,11 +1462,9 @@ window.muatAbsensi = async () => {
   }
   area.innerHTML = '<p class="info-kolom" style="margin-top:14px">Memuat siswa...</p>';
   try {
-    // pakai cache siswa bila ada, kalau tidak ambil
     if (!_siswaCache.length) _siswaCache = await ambilSemua("siswa", "namaSiswa");
     _absenSiswa = _siswaCache.filter(s => s.kelas === kelas)
       .map(s => ({ nis: s.nis || "", nama: s.namaSiswa, status: "Hadir" }));
-
     if (!_absenSiswa.length) {
       area.innerHTML = '<div class="warn" style="margin-top:14px">Belum ada siswa di kelas ' +
         esc(kelas) + '. Tambahkan siswa dulu di menu Siswa.</div>';
@@ -1389,7 +1484,6 @@ function renderAbsensi(){
         o + '</button>').join("") + '</div>' +
     '<div style="overflow-x:auto"><table class="absen"><tr><th>No</th><th>Nama</th>' +
       opsi.map(o => '<th class="pusat k-' + o + '">' + o + '</th>').join("") + '</tr>';
-
   _absenSiswa.forEach((s, i) => {
     html += '<tr><td>' + (i+1) + '</td><td class="nm">' + esc(s.nama) +
       (s.nis ? ' <span style="color:var(--muted);font-size:12px">(' + esc(s.nis) + ')</span>' : '') + '</td>' +
@@ -1398,17 +1492,12 @@ function renderAbsensi(){
         (s.status === o ? ' checked' : '') + ' onchange="setAbsen(' + i + ',\'' + o + '\')"></label></td>'
       ).join("") + '</tr>';
   });
-  html += '</table></div>' +
-    '<div class="rekap-absen" id="rekapAbsen"></div>';
+  html += '</table></div><div class="rekap-absen" id="rekapAbsen"></div>';
   $("absenArea").innerHTML = html;
   hitungRekapAbsen();
 }
-
 window.setAbsen = (i, status) => { _absenSiswa[i].status = status; hitungRekapAbsen(); };
-window.tandaiSemuaAbsen = (status) => {
-  _absenSiswa.forEach(s => s.status = status);
-  renderAbsensi();
-};
+window.tandaiSemuaAbsen = (status) => { _absenSiswa.forEach(s => s.status = status); renderAbsensi(); };
 
 function hitungRekap(){
   let h=0,s=0,i=0,a=0;
@@ -1423,13 +1512,11 @@ function hitungRekapAbsen(){
   const r = hitungRekap();
   const box = $("rekapAbsen");
   if (box) box.innerHTML =
-    '<span class="r-h">Hadir ' + r.h + '</span>' +
-    '<span class="r-s">Sakit ' + r.s + '</span>' +
-    '<span class="r-i">Izin ' + r.i + '</span>' +
-    '<span class="r-a">Alpa ' + r.a + '</span>';
+    '<span class="r-h">Hadir ' + r.h + '</span><span class="r-s">Sakit ' + r.s + '</span>' +
+    '<span class="r-i">Izin ' + r.i + '</span><span class="r-a">Alpa ' + r.a + '</span>';
 }
 
-/* ---- Simpan jurnal ---- */
+/* ---- Simpan / perbarui jurnal ---- */
 window.simpanJurnal = async () => {
   const tanggal = $("jTanggal").value;
   const jamKe   = $("jJam").value.trim();
@@ -1447,91 +1534,338 @@ window.simpanJurnal = async () => {
 
   const r = hitungRekap();
   const kehadiran = "Hadir " + r.h + ", Sakit " + r.s + ", Izin " + r.i + ", Alpa " + r.a;
-
   const btn = $("jBtnSimpan");
   btn.disabled = true; btn.textContent = "Menyimpan...";
+
+  const data = {
+    email: ME.email, nama: ME.nama || ME.email,
+    tanggal, kelas, mapel, jamKe, materi, catatan, kehadiran,
+    absensi: _absenSiswa.map(s => ({ nis: s.nis, nama: s.nama, status: s.status })),
+    fotoUrl: _fotoDataUrl || "",
+    status: "Menunggu", verifikasiOleh: "", tglVerifikasi: "",
+    dibuat: serverTimestamp()
+  };
+
   try {
-    await addDoc(collection(db, "jurnal"), {
-      email: ME.email,
-      nama: ME.nama || ME.email,
-      tanggal, kelas, mapel, jamKe, materi, catatan,
-      kehadiran,
-      absensi: _absenSiswa.map(s => ({ nis: s.nis, nama: s.nama, status: s.status })),
-      status: "Menunggu",
-      verifikasiOleh: "",
-      tglVerifikasi: "",
-      dibuat: serverTimestamp()
-    });
-    // reset form
-    $("jJam").value = ""; $("jMateri").value = ""; $("jCatatan").value = "";
-    setMsg("Jurnal berhasil disimpan.", true);
-    await renderJurnal();
+    if (_editJurnalId) {
+      // edit: pertahankan status jika sudah diverifikasi? -> reset ke Menunggu bila diedit
+      await updateDoc(doc(db, "jurnal", _editJurnalId), {
+        tanggal, kelas, mapel, jamKe, materi, catatan, kehadiran,
+        absensi: data.absensi, fotoUrl: data.fotoUrl,
+        status: "Menunggu", verifikasiOleh: "", tglVerifikasi: ""
+      });
+      setMsg("Jurnal diperbarui. Status kembali ke Menunggu.", true);
+      batalEditJurnal();
+    } else {
+      await addDoc(collection(db, "jurnal"), data);
+      $("jJam").value = ""; $("jMateri").value = ""; $("jCatatan").value = "";
+      hapusFotoJurnal();
+      setMsg("Jurnal berhasil disimpan.", true);
+    }
   } catch (e) {
     setMsg("Gagal menyimpan: " + e.message, false);
   } finally {
-    btn.disabled = false; btn.textContent = "Simpan Jurnal";
+    btn.disabled = false; btn.textContent = _editJurnalId ? "Perbarui Jurnal" : "Simpan Jurnal";
   }
 };
 
-/* ---- Daftar jurnal ---- */
+window.batalEditJurnal = () => {
+  _editJurnalId = null;
+  $("jJudulForm") && ($("jJudulForm").textContent = "Isi Jurnal Mengajar");
+  $("jBtnSimpan") && ($("jBtnSimpan").textContent = "Simpan Jurnal");
+  $("jBtnBatal") && ($("jBtnBatal").style.display = "none");
+};
+
+/* =====================  DAFTAR JURNAL  ===================== */
+async function muatDaftarJurnal(){
+  _pilihJurnal = new Set();
+  const bisaVerif = (ME.role === "admin" || ME.role === "kepsek");
+  $("main").innerHTML =
+    '<div class="card"><h2>Daftar Jurnal</h2>' +
+      (bisaVerif ?
+        '<div class="jbulk">' +
+          '<label class="jbulk-kiri"><input type="checkbox" id="jCekAll" onclick="cekSemuaJurnal(this)"> Pilih semua</label>' +
+          '<div class="jbulk-kanan" id="jBulkAksi" style="display:none">' +
+            '<button class="b-setuju" onclick="verifMassal(\'Disetujui\')" id="jbSetuju">\u2713 Setujui</button>' +
+            '<button class="b-tolak" onclick="verifMassal(\'Ditolak\')" id="jbTolak">\u2715 Tolak</button>' +
+            (ME.role === "admin" ?
+              '<button class="b-hapus" onclick="hapusMassalJurnal()" id="jbHapus">\uD83D\uDDD1 Hapus</button>' : '') +
+          '</div>' +
+        '</div>' : '') +
+      '<div id="jurnalList"><div class="page-kosong">Memuat...</div></div>' +
+    '</div>';
+  await renderJurnal();
+}
+
 async function renderJurnal(){
   try {
     let q;
     if (ME.role === "guru") {
-      // guru: hanya jurnal miliknya
       q = query(collection(db, "jurnal"), where("email", "==", ME.email));
     } else {
-      q = collection(db, "jurnal");   // admin & kepsek: semua
+      q = collection(db, "jurnal");
     }
     const snap = await getDocs(q);
     _jurnalCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    // urutkan terbaru dulu berdasar tanggal lalu waktu dibuat
     _jurnalCache.sort((a,b) => {
-      const ta = (a.tanggal||"") + (a.dibuat && a.dibuat.seconds ? a.dibuat.seconds : "");
-      const tb = (b.tanggal||"") + (b.dibuat && b.dibuat.seconds ? b.dibuat.seconds : "");
-      return tb.localeCompare(ta);
+      const sa = (a.dibuat && a.dibuat.seconds) ? a.dibuat.seconds : 0;
+      const sb = (b.dibuat && b.dibuat.seconds) ? b.dibuat.seconds : 0;
+      if (sa !== sb) return sb - sa;
+      return String(b.tanggal||"").localeCompare(String(a.tanggal||""));
     });
 
-    $("jJudulDaftar").textContent = "Daftar Jurnal (" + _jurnalCache.length + ")";
     if (!_jurnalCache.length) {
-      $("jurnalList").innerHTML = '<div class="empty">Belum ada jurnal.</div>'; return;
+      $("jurnalList").innerHTML = '<div class="empty">Belum ada jurnal.</div>';
+      perbaruiBulkJurnal();
+      return;
     }
 
+    const bisaVerif = (ME.role === "admin" || ME.role === "kepsek");
     const bisaHapus = (ME.role === "admin");
+    const bisaEdit  = (ME.role === "admin" || ME.role === "guru");
+
     let html = "";
     _jurnalCache.forEach(j => {
-      html += '<div class="jurnal-item">' +
-        '<div class="head">' +
-          '<div><b>' + esc(j.mapel || "-") + '</b> \u2014 ' + esc(j.kelas || "-") +
-            '<div class="info-baris">' + esc(j.tanggal || "-") +
-            (j.jamKe ? ' \u00b7 Jam ' + esc(j.jamKe) : '') +
-            (ME.role !== "guru" ? ' \u00b7 ' + esc(j.nama || j.email) : '') + '</div>' +
-          '</div>' +
-          '<span class="chip ' + esc(j.status || "Menunggu") + '">' + esc(j.status || "Menunggu") + '</span>' +
-        '</div>' +
-        '<div class="materi">' + esc(j.materi || "-") + '</div>' +
-        (j.catatan ? '<div class="info-baris">Catatan: ' + esc(j.catatan) + '</div>' : '') +
-        '<div class="kehadiran">' + esc(j.kehadiran || "") + '</div>' +
-        (j.verifikasiOleh ? '<div class="info-baris" style="margin-top:6px">' +
-          'Diverifikasi oleh ' + esc(j.verifikasiOleh) +
-          (j.tglVerifikasi ? ' (' + esc(j.tglVerifikasi) + ')' : '') + '</div>' : '') +
-        (bisaHapus ? '<div class="actions"><button class="aksi-hapus" onclick="hapusJurnal(\'' +
-          j.id + '\')">Hapus</button></div>' : '') +
-      '</div>';
+      html += kartuJurnal(j, { bisaVerif, bisaHapus, bisaEdit });
     });
     $("jurnalList").innerHTML = html;
+    perbaruiBulkJurnal();
   } catch (e) {
     $("jurnalList").innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>';
   }
 }
 
+/* Susun satu kartu jurnal */
+function kartuJurnal(j, hak){
+  const status = j.status || "Menunggu";
+  const bisaVerif = hak.bisaVerif;
+  // daftar siswa tidak hadir (untuk info ringkas)
+  const takHadir = (Array.isArray(j.absensi) ? j.absensi : [])
+    .filter(a => String(a.status).toLowerCase() !== "hadir");
+  const semuaHadir = takHadir.length === 0 && Array.isArray(j.absensi) && j.absensi.length > 0;
+  const cekBox = bisaVerif ?
+    '<div class="jurnal-cek"><input type="checkbox" ' + (_pilihJurnal.has(j.id) ? "checked" : "") +
+      ' onclick="togglePilihJurnal(\'' + j.id + '\')"></div>' : '';
+
+  const punyaFoto = j.fotoUrl && String(j.fotoUrl).startsWith("data:");
+
+  let tombol = '<div class="actions">' +
+    '<button class="jbtn jbtn-ghost" onclick="cetakJurnal(\'' + j.id + '\')">\uD83D\uDda8 Cetak / PDF</button>' +
+    (punyaFoto ?
+      '<button class="jbtn jbtn-ghost" onclick="lihatDokumentasi(\'' + j.id + '\')">\uD83D\uDCf7 Lihat Dokumentasi</button>' : '') +
+    (hak.bisaEdit ?
+      '<button class="jbtn jbtn-edit" onclick="editJurnal(\'' + j.id + '\')">\u270e Edit</button>' : '') +
+    (hak.bisaHapus ?
+      '<button class="jbtn jbtn-hapus" onclick="hapusJurnal(\'' + j.id + '\')">\uD83D\uDDd1 Hapus</button>' : '') +
+    '</div>';
+
+  // tombol setuju/tolak hanya admin & kepsek
+  let verif = "";
+  if (bisaVerif) {
+    verif = '<div class="actions-verif">' +
+      '<button class="jbtn jbtn-setuju" onclick="verifSatu(\'' + j.id + '\',\'Disetujui\')">Setujui</button>' +
+      '<button class="jbtn jbtn-tolak" onclick="verifSatu(\'' + j.id + '\',\'Ditolak\')">Tolak</button>' +
+      '</div>';
+  }
+
+  return '<div class="jurnal-item">' +
+    cekBox +
+    '<div class="head">' +
+      '<div><b>' + esc(j.mapel || "-") + '</b> \u2014 ' + esc(j.kelas || "-") +
+        '<div class="info-baris">' + esc(j.nama || j.email) + ' \u00b7 ' + esc(j.tanggal || "-") +
+        (j.jamKe ? ' \u00b7 Jam ' + esc(j.jamKe) : '') + '</div>' +
+      '</div>' +
+      '<span class="chip ' + esc(status) + '">' + esc(status) + '</span>' +
+    '</div>' +
+    '<div class="materi" style="margin-top:6px"><b>Materi:</b> ' + esc(j.materi || "-") + '</div>' +
+    '<div class="kehadiran">Kehadiran: ' + esc(j.kehadiran || "") + '</div>' +
+    (semuaHadir ? '<div class="semua-hadir">Semua siswa hadir \u2713</div>' :
+      (takHadir.length ? '<div class="tidak-hadir">Tidak hadir: ' +
+        takHadir.map(a => esc(a.nama) + ' (' + esc(a.status) + ')').join(", ") + '</div>' : '')) +
+    (j.verifikasiOleh ? '<div class="info-baris" style="margin-top:4px">Diverifikasi: ' +
+      esc(j.verifikasiOleh) + (j.tglVerifikasi ? ' (' + esc(j.tglVerifikasi) + ')' : '') + '</div>' : '') +
+    tombol + verif +
+  '</div>';
+}
+
+/* ---- Checkbox & bulkbar ---- */
+window.togglePilihJurnal = (id) => {
+  if (_pilihJurnal.has(id)) _pilihJurnal.delete(id); else _pilihJurnal.add(id);
+  perbaruiBulkJurnal();
+};
+window.cekSemuaJurnal = (cb) => {
+  if (cb.checked) _jurnalCache.forEach(j => _pilihJurnal.add(j.id));
+  else _pilihJurnal = new Set();
+  renderJurnal();
+};
+function perbaruiBulkJurnal(){
+  const aksi = $("jBulkAksi");
+  if (!aksi) return;
+  const n = _pilihJurnal.size;
+  aksi.style.display = n > 0 ? "flex" : "none";
+  if (n > 0) {
+    if ($("jbSetuju")) $("jbSetuju").textContent = "\u2713 Setujui " + n;
+    if ($("jbTolak"))  $("jbTolak").textContent  = "\u2715 Tolak " + n;
+    if ($("jbHapus"))  $("jbHapus").textContent  = "\uD83D\uDDd1 Hapus " + n;
+  }
+}
+
+/* ---- Verifikasi (setujui/tolak) ---- */
+window.verifSatu = async (id, keputusan) => {
+  try {
+    await updateDoc(doc(db, "jurnal", id), {
+      status: keputusan,
+      verifikasiOleh: ME.nama || ME.email,
+      tglVerifikasi: new Date().toLocaleString("id-ID")
+    });
+    toast("Jurnal " + keputusan.toLowerCase() + ".");
+    _pilihJurnal.delete(id);
+    await renderJurnal();
+  } catch (e) { toast("Gagal: " + e.message); }
+};
+
+window.verifMassal = async (keputusan) => {
+  const ids = Array.from(_pilihJurnal);
+  if (!ids.length) return;
+  if (!confirm(keputusan + " " + ids.length + " jurnal yang dipilih?")) return;
+  try {
+    const stamp = new Date().toLocaleString("id-ID");
+    const oleh = ME.nama || ME.email;
+    let batch = writeBatch(db), n = 0;
+    for (const id of ids) {
+      batch.update(doc(db, "jurnal", id), {
+        status: keputusan, verifikasiOleh: oleh, tglVerifikasi: stamp
+      });
+      n++;
+      if (n % 400 === 0) { await batch.commit(); batch = writeBatch(db); }
+    }
+    await batch.commit();
+    toast(ids.length + " jurnal " + keputusan.toLowerCase() + ".");
+    _pilihJurnal = new Set();
+    await renderJurnal();
+  } catch (e) { toast("Gagal verifikasi massal: " + e.message); }
+};
+
+/* ---- Hapus ---- */
 window.hapusJurnal = async (id) => {
   if (!confirm("Hapus jurnal ini? Tindakan tidak bisa dibatalkan.")) return;
   try {
     await deleteDoc(doc(db, "jurnal", id));
+    _pilihJurnal.delete(id);
     toast("Jurnal dihapus.");
     await renderJurnal();
   } catch (e) { toast("Gagal menghapus: " + e.message); }
+};
+window.hapusMassalJurnal = async () => {
+  const ids = Array.from(_pilihJurnal);
+  if (!ids.length) return;
+  if (!confirm("Hapus " + ids.length + " jurnal yang dipilih? Tidak bisa dibatalkan.")) return;
+  try {
+    let batch = writeBatch(db), n = 0;
+    for (const id of ids) {
+      batch.delete(doc(db, "jurnal", id));
+      n++;
+      if (n % 400 === 0) { await batch.commit(); batch = writeBatch(db); }
+    }
+    await batch.commit();
+    toast(ids.length + " jurnal dihapus.");
+    _pilihJurnal = new Set();
+    await renderJurnal();
+  } catch (e) { toast("Gagal menghapus massal: " + e.message); }
+};
+
+/* ---- Edit: pindah ke Isi Jurnal dengan data terisi ---- */
+window.editJurnal = async (id) => {
+  const j = _jurnalCache.find(x => x.id === id);
+  if (!j) return;
+  // Pindah ke tab Isi Jurnal
+  const tombolIsi = Array.from(document.querySelectorAll("#nav button"))
+    .find(b => b.textContent === LABEL.isijurnal);
+  if (tombolIsi) { document.querySelectorAll("#nav button").forEach(x=>x.classList.remove("active")); tombolIsi.classList.add("active"); }
+  await muatIsiJurnal();
+
+  _editJurnalId = id;
+  $("jTanggal").value = j.tanggal || "";
+  $("jJam").value = j.jamKe || "";
+  if ($("jKelas")) $("jKelas").value = j.kelas || "";
+  if ($("jMapel")) $("jMapel").value = j.mapel || "";
+  $("jMateri").value = j.materi || "";
+  $("jCatatan").value = j.catatan || "";
+
+  // muat absensi kelas, lalu terapkan status tersimpan
+  await muatAbsensi();
+  if (Array.isArray(j.absensi) && j.absensi.length) {
+    j.absensi.forEach(a => {
+      const idx = _absenSiswa.findIndex(s => (s.nis && a.nis && s.nis === a.nis) || s.nama === a.nama);
+      if (idx >= 0) _absenSiswa[idx].status = a.status;
+    });
+    renderAbsensi();
+  }
+  // foto lama
+  _fotoDataUrl = (j.fotoUrl && String(j.fotoUrl).startsWith("data:")) ? j.fotoUrl : "";
+  if (_fotoDataUrl && $("jFotoPreview")) {
+    $("jFotoPreview").innerHTML = '<img src="' + _fotoDataUrl + '" class="foto-preview" alt="pratinjau">' +
+      '<p class="info-kolom" style="margin-top:6px"><button class="jbtn jbtn-ghost" onclick="hapusFotoJurnal()">Hapus foto</button></p>';
+  }
+
+  $("jJudulForm").textContent = "Edit Jurnal";
+  $("jBtnSimpan").textContent = "Perbarui Jurnal";
+  $("jBtnBatal").style.display = "inline-block";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+/* ---- Lihat dokumentasi (foto) ---- */
+window.lihatDokumentasi = (id) => {
+  const j = _jurnalCache.find(x => x.id === id);
+  if (!j || !j.fotoUrl) return toast("Tidak ada dokumentasi.");
+  const w = window.open("", "_blank");
+  w.document.write('<html><head><title>Dokumentasi \u2014 ' + esc(j.mapel||"") + '</title></head>' +
+    '<body style="margin:0;background:#111;display:grid;place-items:center;min-height:100vh">' +
+    '<img src="' + j.fotoUrl + '" style="max-width:100%;max-height:100vh">' +
+    '</body></html>');
+  w.document.close();
+};
+
+/* ---- Cetak / PDF ---- */
+window.cetakJurnal = (id) => {
+  const j = _jurnalCache.find(x => x.id === id);
+  if (!j) return;
+  const absensi = Array.isArray(j.absensi) ? j.absensi : [];
+  let barisAbsen = absensi.map((a, i) =>
+    '<tr><td>' + (i+1) + '</td><td>' + esc(a.nis||"-") + '</td><td>' + esc(a.nama) +
+    '</td><td>' + esc(a.status) + '</td></tr>').join("");
+
+  const fotoHtml = (j.fotoUrl && String(j.fotoUrl).startsWith("data:")) ?
+    '<div style="margin-top:16px"><b>Dokumentasi:</b><br><img src="' + j.fotoUrl +
+    '" style="max-width:400px;margin-top:8px;border:1px solid #ccc"></div>' : '';
+
+  const w = window.open("", "_blank");
+  w.document.write(
+    '<html><head><title>Jurnal ' + esc(j.mapel||"") + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#000;font-size:13px}' +
+    'h2{margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px}' +
+    'th,td{border:1px solid #999;padding:5px 7px;text-align:left;font-size:12px}' +
+    '.meta{margin:10px 0;line-height:1.7}.ttd{margin-top:40px;display:flex;justify-content:space-between}' +
+    '</style></head><body>' +
+    '<h2>Jurnal Mengajar</h2>' +
+    '<div class="meta">' +
+      '<b>Guru:</b> ' + esc(j.nama||j.email) + '<br>' +
+      '<b>Mapel:</b> ' + esc(j.mapel||"-") + ' &nbsp; <b>Kelas:</b> ' + esc(j.kelas||"-") + '<br>' +
+      '<b>Tanggal:</b> ' + esc(j.tanggal||"-") + ' &nbsp; <b>Jam ke:</b> ' + esc(j.jamKe||"-") + '<br>' +
+      '<b>Status:</b> ' + esc(j.status||"Menunggu") +
+      (j.verifikasiOleh ? ' (oleh ' + esc(j.verifikasiOleh) + ')' : '') +
+    '</div>' +
+    '<div><b>Materi:</b> ' + esc(j.materi||"-") + '</div>' +
+    (j.catatan ? '<div style="margin-top:6px"><b>Catatan:</b> ' + esc(j.catatan) + '</div>' : '') +
+    '<div style="margin-top:6px"><b>Rekap:</b> ' + esc(j.kehadiran||"-") + '</div>' +
+    '<table><tr><th>No</th><th>NIS</th><th>Nama</th><th>Kehadiran</th></tr>' + barisAbsen + '</table>' +
+    fotoHtml +
+    '<div class="ttd"><div>Mengetahui,<br>Kepala Sekolah<br><br><br>(__________________)</div>' +
+    '<div>Guru Mapel,<br><br><br><br>(' + esc(j.nama||"__________") + ')</div></div>' +
+    '</body></html>');
+  w.document.close();
+  w.focus();
+  setTimeout(() => { try { w.print(); } catch(e){} }, 400);
 };
 
 </script>
