@@ -333,11 +333,19 @@ table.tabel-nilai td.n-input { text-align: center; }
 .tema-btn:hover { border-color: var(--primary); }
 .tema-btn.aktif { border-color: var(--primary); background: var(--primary); color: #fff; }
 /* Daftar checkbox mapel (multi-pilih untuk guru) */
-.mapel-cek-list { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line);
-  border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; }
+/* Wadah field mapel: kotak cari + info + daftar grid */
+.mapel-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.mapel-cari { width: 100%; margin: 0 0 8px; }
+.mapel-info { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.mapel-info b { color: var(--primary); }
+/* Daftar centang mapel: grid otomatis, ringkas, tinggi dibatasi */
+.mapel-cek-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 4px 12px; max-height: 168px; overflow-y: auto; padding: 2px; }
 .cek-mapel { display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;
-  font-size: 14px; font-weight: normal; }
-.cek-mapel input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); margin: 0; }
+  font-size: 13px; font-weight: normal; padding: 4px 2px; border-radius: 6px; }
+.cek-mapel:hover { background: var(--bg); }
+.cek-mapel input { width: 17px; height: 17px; flex-shrink: 0; cursor: pointer; accent-color: var(--primary); margin: 0; }
+.cek-mapel.tersembunyi { display: none; }
 /* Footer info aplikasi */
 .app-footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6;
   padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px; }
@@ -1405,8 +1413,9 @@ async function muatPengguna(){
   // Daftar checkbox mapel (multi-pilih untuk guru)
   const checkMapel = mapelList.length
     ? mapelList.map(m =>
-        '<label class="cek-mapel"><input type="checkbox" class="uMapelCek" value="' +
-        esc(m.namaMapel) + '"> ' + esc(labelMapel(m)) + '</label>').join("")
+        '<label class="cek-mapel" data-nama="' + esc(labelMapel(m)).toLowerCase() + '">' +
+        '<input type="checkbox" class="uMapelCek" value="' + esc(m.namaMapel) +
+        '" onchange="hitungMapelTerpilih()"> ' + esc(labelMapel(m)) + '</label>').join("")
     : '<span style="color:var(--muted);font-size:13px">Belum ada mapel. Tambahkan di menu Mapel.</span>';
 
   $("main").innerHTML =
@@ -1429,7 +1438,12 @@ async function muatPengguna(){
       '<div class="row">' +
         '<div><label>NIP (opsional)</label><input id="uNip" placeholder="Nomor Induk Pegawai"></div>' +
         '<div id="wrapMapel"><label>Mapel yang Diampu (untuk guru, bisa lebih dari satu)</label>' +
-          '<div class="mapel-cek-list">' + checkMapel + '</div></div>' +
+          '<div class="mapel-box">' +
+            (mapelList.length > 6 ?
+              '<input class="mapel-cari" placeholder="Cari mapel..." oninput="cariMapelPengguna(this.value)">' : '') +
+            '<div class="mapel-info" id="mapelInfo">0 mapel dipilih</div>' +
+            '<div class="mapel-cek-list" id="mapelCekList">' + checkMapel + '</div>' +
+          '</div></div>' +
       '</div>' +
       '<div class="row">' +
         '<div id="wrapKelas"><label>Kelas (opsional)</label>' +
@@ -1459,6 +1473,7 @@ async function muatPengguna(){
       '<div id="penggunaList"><div class="page-kosong">Memuat...</div></div></div>';
 
   ubahFieldPeran();
+  hitungMapelTerpilih();
   await renderPengguna();
 }
 
@@ -1468,6 +1483,22 @@ window.ubahFieldPeran = () => {
   const tampil = (role === "guru") ? "block" : "none";
   if ($("wrapMapel")) $("wrapMapel").style.display = tampil;
   if ($("wrapKelas")) $("wrapKelas").style.display = tampil;
+};
+
+/* Saring daftar mapel saat mengetik di kotak cari */
+window.cariMapelPengguna = (kata) => {
+  const k = String(kata||"").toLowerCase().trim();
+  document.querySelectorAll("#mapelCekList .cek-mapel").forEach(el => {
+    const nama = el.getAttribute("data-nama") || "";
+    el.classList.toggle("tersembunyi", k && !nama.includes(k));
+  });
+};
+
+/* Perbarui info jumlah mapel yang dipilih */
+window.hitungMapelTerpilih = () => {
+  const n = document.querySelectorAll(".uMapelCek:checked").length;
+  const info = $("mapelInfo");
+  if (info) info.innerHTML = n ? '<b>' + n + '</b> mapel dipilih' : '0 mapel dipilih';
 };
 
 async function renderPengguna(){
@@ -1570,6 +1601,7 @@ window.editPengguna = (id) => {
   document.querySelectorAll(".uMapelCek").forEach(cb => {
     cb.checked = mapelDimiliki.has(cb.value);
   });
+  hitungMapelTerpilih();
   if ($("uKelas")) $("uKelas").value = u.kelas || "";
 
   // Kunci email & sandi (tak bisa diubah dari sini)
