@@ -324,6 +324,18 @@ table.tabel-nilai td.n-input { text-align: center; }
 .nilai-akhir { font-weight: 700; }
 .nilai-akhir.tuntas { color: var(--green); }
 .nilai-akhir.belum { color: var(--red); }
+/* Pemilih tema */
+.tema-pilih { display: flex; gap: 10px; flex-wrap: wrap; }
+.tema-btn { flex: 1; min-width: 120px; background: var(--card); border: 2px solid var(--line);
+  padding: 16px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600;
+  color: var(--ink); margin: 0; transition: all .15s; }
+.tema-btn:hover { border-color: var(--primary); }
+.tema-btn.aktif { border-color: var(--primary); background: var(--primary); color: #fff; }
+/* Footer info aplikasi */
+.app-footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6;
+  padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px; }
+#loginFooter { border-top: none; margin-top: 16px; padding: 12px 8px 0; }
+.app-footer b { color: var(--ink); font-weight: 600; }
 /* Absensi per siswa */
 .absen-aksi { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 14px 0 6px; }
 .absen-aksi .btn-sm { margin-top: 0; }
@@ -404,6 +416,7 @@ th.k-Alpa  { color: var(--red); }
     <button class="btn" style="width:100%" onclick="masuk()">Masuk</button>
     <div id="loginMsg"></div>
   </div>
+  <div class="app-footer" id="loginFooter"></div>
 </div>
 
 <!-- ============ APLIKASI ============ -->
@@ -418,6 +431,7 @@ th.k-Alpa  { color: var(--red); }
   </header>
   <nav id="nav"></nav>
   <main id="main"><div class="page-kosong">Memuat...</div></main>
+  <div class="app-footer" id="appFooter"></div>
 </div>
 
 <div id="toast" class="toast"></div>
@@ -465,6 +479,73 @@ let _siswaCache = [];   // cache daftar siswa (dipakai untuk filter & cari)
 let _penggunaCache = []; // cache daftar pengguna (dipakai untuk edit)
 let _editUserId = null;  // null = mode tambah pengguna; ada isi = mode edit
 
+/* ============ TEMA / MODE PENCAHAYAAN ============
+   Pilihan: "light" | "dark" | "system". Disimpan di localStorage. */
+function bacaTema(){
+  try { return localStorage.getItem("temaAplikasi") || "system"; }
+  catch (e) { return "system"; }
+}
+function simpanTema(nilai){
+  try { localStorage.setItem("temaAplikasi", nilai); } catch (e) {}
+}
+/* Terapkan tema ke halaman. "system" mengikuti pengaturan HP/komputer. */
+function terapkanTema(){
+  const pilihan = bacaTema();
+  let gelap = false;
+  if (pilihan === "dark") gelap = true;
+  else if (pilihan === "system")
+    gelap = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.setAttribute("data-dark", gelap ? "1" : "0");
+}
+/* Terapkan segera saat file dimuat, sebelum login sekalipun */
+terapkanTema();
+/* Bila pilihan "system", ikuti perubahan tema perangkat secara langsung */
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if (bacaTema() === "system") terapkanTema();
+  });
+}
+
+/* ============ INFO APLIKASI (versi, pembuat, sekolah) ============
+   Dimuat sekali dari Firestore lalu disimpan agar footer & login cepat. */
+let _infoApp = null;
+async function ambilInfoApp(paksa){
+  if (_infoApp && !paksa) return _infoApp;
+  _infoApp = { versi: "1.0", pembuat: "Administrator Sekolah", namaSekolah: "" };
+  try {
+    const snap = await getDoc(doc(db, "pengaturan", "app"));
+    if (snap.exists()) _infoApp = { ..._infoApp, ...snap.data() };
+  } catch (e) { /* pakai default */ }
+  return _infoApp;
+}
+
+/* Susun teks footer: [Nama Sekolah ·] vX.X · Pembuat · © tahun */
+function tekstFooter(info){
+  const tahun = new Date().getFullYear();
+  let bagian = [];
+  if (info.namaSekolah) bagian.push('<b>' + esc(info.namaSekolah) + '</b>');
+  bagian.push('Versi ' + esc(info.versi));
+  bagian.push('Dibuat oleh ' + esc(info.pembuat));
+  return bagian.join(' \u00b7 ') + '<br>\u00a9 ' + tahun +
+    (info.namaSekolah ? ' ' + esc(info.namaSekolah) : '') + '. Hak cipta dilindungi.';
+}
+
+async function isiFooter(elId){
+  const el = $(elId);
+  if (!el) return;
+  // Tampilkan segera dengan info yang ada (default bila belum termuat),
+  // supaya footer tidak pernah kosong meski Firestore lambat/gagal.
+  const infoAwal = _infoApp || { versi: "1.0", pembuat: "Administrator Sekolah", namaSekolah: "" };
+  el.innerHTML = tekstFooter(infoAwal);
+  // Lalu coba muat data terbaru; kalau berhasil, perbarui.
+  try {
+    const info = await ambilInfoApp();
+    el.innerHTML = tekstFooter(info);
+  } catch (e) { /* biarkan tampilan default */ }
+}
+/* Isi footer login segera saat halaman dimuat */
+isiFooter("loginFooter");
+
 const MENU = {
   admin : ["beranda","isijurnal","daftarjurnal","nilai","siswa","kelas","mapel","pengguna","pengaturan"],
   kepsek: ["beranda","daftarjurnal","nilai"],
@@ -497,6 +578,15 @@ function opsiMapelHTML(mapelList, terpilih){
       (m.namaMapel===terpilih?" selected":"") + '>' + esc(labelMapel(m)) + '</option>').join("");
 }
 const bisaEditMaster = () => ME && ME.role === "admin";
+/* Guru & admin boleh mengatur bobot nilai dan KKM (kepsek tidak) */
+const bisaAturNilai = () => ME && (ME.role === "admin" || ME.role === "guru");
+
+/* ID dokumen bobot per kelas+mapel. Firestore melarang '/' di ID,
+   jadi karakter aneh diganti '_'. Contoh: "XI NKPI"+"Matematika" -> "XINKPI__Matematika" */
+function idBobot(kelas, mapel){
+  const bersih = s => String(s || "").replace(/[^\w-]+/g, "");
+  return bersih(kelas) + "__" + bersih(mapel);
+}
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s)
@@ -575,6 +665,7 @@ onAuthStateChanged(auth, async user => {
   $("whoNama").textContent = ME.nama || ME.email;
   $("whoRole").textContent = namaRole(ME.role);
   bangunNav();
+  isiFooter("appFooter");
 });
 
 /* ============ NAVIGASI ============ */
@@ -619,6 +710,7 @@ function buka(key, btn){
   if (key === "isijurnal")   return muatIsiJurnal();
   if (key === "daftarjurnal") return muatDaftarJurnal();
   if (key === "nilai")   return muatNilai();
+  if (key === "pengaturan") return muatPengaturan();
   return tampilBelumDibangun(key);
 }
 
@@ -2467,8 +2559,11 @@ let _kkm = 70;   // batas nilai tuntas (bisa diatur)
 async function renderRataRata(){
   $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Menghitung...</div></div>';
   // muat bobot & KKM
+  // reset ke default dulu, lalu muat bobot khusus kelas+mapel ini
+  _bobotNilai = { harian: 33, tugas: 33, uh: 34 };
+  _kkm = 70;
   try {
-    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    const bsnap = await getDoc(doc(db, "bobot", idBobot(_nKelas, _nMapel)));
     if (bsnap.exists()) {
       const d = bsnap.data();
       _bobotNilai = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
@@ -2505,7 +2600,7 @@ async function renderRataRata(){
   const terendah  = akhirAda.length ? Math.min(...akhirAda) : null;
   const f = v => v===null ? "-" : v.toFixed(1);
 
-  const bolehAturBobot = bisaEditMaster();
+  const bolehAturBobot = bisaAturNilai();
 
   let tabel = '<div class="tabel-scroll"><table class="tabel-nilai" style="min-width:620px">' +
     '<tr><th>No</th><th>NIS</th><th>Nama Siswa</th>' +
@@ -2576,10 +2671,11 @@ window.simpanBobotN = async () => {
     kkm: (isNaN(kkmVal) ? 70 : Math.max(0, Math.min(100, kkmVal)))
   };
   try {
-    // gabungkan dengan bobot rapor yang mungkin sudah ada agar tidak tertimpa
-    const snap = await getDoc(doc(db, "bobot", "global"));
+    // simpan bobot khusus kelas+mapel ini; pertahankan bobot rapor yang mungkin ada
+    const idDok = idBobot(_nKelas, _nMapel);
+    const snap = await getDoc(doc(db, "bobot", idDok));
     const lama = snap.exists() ? snap.data() : {};
-    await setDoc(doc(db, "bobot", "global"), { ...lama, ...bobot });
+    await setDoc(doc(db, "bobot", idDok), { ...lama, ...bobot });
     _bobotNilai = { harian: bobot.harian, tugas: bobot.tugas, uh: bobot.uh };
     _kkm = bobot.kkm;
     setMsg("Pengaturan tersimpan. Menghitung ulang...", true);
@@ -2599,8 +2695,13 @@ let _kkmRapor = 70;   // batas tuntas khusus rapor
 async function renderRapor(){
   $("nIsi").innerHTML = '<div class="card"><div class="page-kosong">Menghitung...</div></div>';
   // muat bobot rata-rata, KKM, dan bobot rapor
+  // reset default, lalu muat bobot khusus kelas+mapel ini
+  _bobotNilai = { harian: 33, tugas: 33, uh: 34 };
+  _kkm = 70;
+  _bobotRapor = { rataRata: 50, sumatif: 50 };
+  _kkmRapor = 70;
   try {
-    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    const bsnap = await getDoc(doc(db, "bobot", idBobot(_nKelas, _nMapel)));
     if (bsnap.exists()) {
       const d = bsnap.data();
       _bobotNilai = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
@@ -2646,7 +2747,7 @@ async function renderRapor(){
   const tertinggi = raporAda.length ? Math.max(...raporAda) : null;
   const terendah  = raporAda.length ? Math.min(...raporAda) : null;
   const f = v => v===null ? "-" : v.toFixed(1);
-  const bolehAtur = bisaEditMaster();
+  const bolehAtur = bisaAturNilai();
 
   let tabel = '<div class="tabel-scroll"><table class="tabel-nilai" style="min-width:560px">' +
     '<tr><th>No</th><th>NIS</th><th>Nama Siswa</th>' +
@@ -2712,9 +2813,10 @@ window.simpanBobotRapor = async () => {
   const kkmR = Number($("rKkm").value);
   const kkmRapor = isNaN(kkmR) ? 70 : Math.max(0, Math.min(100, kkmR));
   try {
-    const snap = await getDoc(doc(db, "bobot", "global"));
+    const idDok = idBobot(_nKelas, _nMapel);
+    const snap = await getDoc(doc(db, "bobot", idDok));
     const lama = snap.exists() ? snap.data() : {};
-    await setDoc(doc(db, "bobot", "global"), { ...lama, raporRata, raporSumatif, kkmRapor });
+    await setDoc(doc(db, "bobot", idDok), { ...lama, raporRata, raporSumatif, kkmRapor });
     _bobotRapor = { rataRata: raporRata, sumatif: raporSumatif };
     _kkmRapor = kkmRapor;
     setMsg("Pengaturan rapor tersimpan. Menghitung ulang...", true);
@@ -2729,7 +2831,7 @@ async function hitungRekapNilaiLengkap(){
   let bobot = { harian:33, tugas:33, uh:34 }, kkm = 70;
   let bRapor = { rataRata:50, sumatif:50 }, kkmRapor = 70;
   try {
-    const bsnap = await getDoc(doc(db, "bobot", "global"));
+    const bsnap = await getDoc(doc(db, "bobot", idBobot(_nKelas, _nMapel)));
     if (bsnap.exists()) {
       const d = bsnap.data();
       bobot = { harian: d.harian ?? 33, tugas: d.tugas ?? 33, uh: d.uh ?? 34 };
@@ -2851,6 +2953,85 @@ window.excelNilai = async () => {
   const namaFile = "Nilai-" + _nKelas.replace(/\s+/g,"") + "-" + _nMapel.replace(/\s+/g,"") + ".xlsx";
   XLSX.writeFile(wb, namaFile);
   toast("Excel diunduh.");
+};
+
+
+/* ============================================================
+   MODUL: PENGATURAN
+   - Info versi & pembuat aplikasi (admin bisa edit)
+   - Mode pencahayaan: Light / Dark / System
+   ============================================================ */
+const VERSI_DEFAULT = "1.0";
+const PEMBUAT_DEFAULT = "Administrator Sekolah";
+
+async function muatPengaturan(){
+  $("main").innerHTML = '<div class="card"><div class="page-kosong">Memuat...</div></div>';
+
+  // muat info aplikasi dari Firestore (dokumen pengaturan/app)
+  let info = { versi: VERSI_DEFAULT, pembuat: PEMBUAT_DEFAULT, namaSekolah: "" };
+  try {
+    const snap = await getDoc(doc(db, "pengaturan", "app"));
+    if (snap.exists()) info = { ...info, ...snap.data() };
+  } catch (e) { /* pakai default */ }
+
+  const bolehEdit = bisaEditMaster();
+  const temaAktif = bacaTema();
+  const tombolTema = (nilai, label, ikon) =>
+    '<button class="tema-btn ' + (temaAktif===nilai?"aktif":"") + '" onclick="pilihTema(\'' + nilai + '\')">' +
+      ikon + ' ' + label + '</button>';
+
+  $("main").innerHTML =
+    // ---- Mode pencahayaan ----
+    '<div class="card"><h2>Mode Pencahayaan</h2>' +
+      '<p class="info-kolom">Pilih tampilan terang, gelap, atau ikuti pengaturan perangkatmu.</p>' +
+      '<div class="tema-pilih">' +
+        tombolTema("light", "Terang", "\u2600\uFE0F") +
+        tombolTema("dark", "Gelap", "\uD83C\uDF19") +
+        tombolTema("system", "Ikuti Sistem", "\uD83D\uDCBB") +
+      '</div>' +
+    '</div>' +
+    // ---- Info aplikasi ----
+    '<div class="card"><h2>Tentang Aplikasi</h2>' +
+      (bolehEdit ?
+        // admin: bisa edit
+        '<div class="row">' +
+          '<div><label>Versi Aplikasi</label><input id="setVersi" value="' + esc(info.versi) + '"></div>' +
+          '<div><label>Nama Sekolah (opsional)</label><input id="setSekolah" value="' + esc(info.namaSekolah||"") + '"></div>' +
+        '</div>' +
+        '<label>Pembuat Aplikasi</label><input id="setPembuat" value="' + esc(info.pembuat) + '">' +
+        '<button class="btn" onclick="simpanPengaturan()">Simpan Info Aplikasi</button>' +
+        '<div id="setMsg"></div>'
+        :
+        // non-admin: hanya lihat
+        '<table><tr><td style="width:160px;color:var(--muted)">Versi Aplikasi</td><td><b>' + esc(info.versi) + '</b></td></tr>' +
+        (info.namaSekolah ? '<tr><td style="color:var(--muted)">Nama Sekolah</td><td>' + esc(info.namaSekolah) + '</td></tr>' : '') +
+        '<tr><td style="color:var(--muted)">Pembuat Aplikasi</td><td>' + esc(info.pembuat) + '</td></tr></table>'
+      ) +
+    '</div>';
+}
+
+window.pilihTema = (nilai) => {
+  simpanTema(nilai);
+  terapkanTema();
+  // perbarui tampilan tombol aktif tanpa memuat ulang seluruh halaman
+  document.querySelectorAll(".tema-btn").forEach(b => b.classList.remove("aktif"));
+  const map = { light:0, dark:1, system:2 };
+  const btns = document.querySelectorAll(".tema-btn");
+  if (btns[map[nilai]]) btns[map[nilai]].classList.add("aktif");
+  toast("Tema diubah.");
+};
+
+window.simpanPengaturan = async () => {
+  const setMsg = (t, ok) => { $("setMsg").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>'; };
+  const versi = $("setVersi").value.trim() || VERSI_DEFAULT;
+  const pembuat = $("setPembuat").value.trim() || PEMBUAT_DEFAULT;
+  const namaSekolah = $("setSekolah").value.trim();
+  try {
+    await setDoc(doc(db, "pengaturan", "app"), { versi, pembuat, namaSekolah });
+    _infoApp = { versi, pembuat, namaSekolah };   // segarkan cache
+    isiFooter("appFooter");                        // perbarui footer langsung
+    setMsg("Info aplikasi tersimpan.", true);
+  } catch (e) { setMsg("Gagal menyimpan: " + e.message, false); }
 };
 
 </script>
