@@ -7,6 +7,24 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 
+  /* ===== SETTING UPLOAD FOTO (AKMAL) ===== */
+  .foto-sumber { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .foto-sumber .btn { flex: 1; min-width: 150px; }
+
+  /* ===== SETTING TOMBOL PENCAHAYAAN (AKMAL) ===== */
+  .loginbox { position: relative; }
+  .login-tema-toggle {
+  position: absolute; top: 16px; right: 16px;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--line); background: var(--bg);
+  cursor: pointer; font-size: 18px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0; padding: 0; transition: background .15s, transform .1s;
+  }
+  .login-tema-toggle:hover { background: var(--card); }
+  .login-tema-toggle:active { transform: scale(.92); }
+  
+
   :root {
     --bg: #f4f6fb;
     --card: #ffffff;
@@ -354,7 +372,9 @@ table.tabel-nilai td.n-input { text-align: center; }
   border-top: 1px solid var(--line); margin-top: 20px;
   overflow-wrap: anywhere; word-break: break-word;
   max-width: 900px; margin-left: auto; margin-right: auto; }
-#loginFooter { border-top: none; margin-top: 16px; padding: 12px 8px 0; }
+#loginFooter { border-top: 1px solid var(--line); margin-top: 20px; padding: 7px 8px 0;
+  max-width: none; display: block; color: var(--muted); font-size: 10px;
+  line-height: 1.6; text-align: center; }
 .app-footer b { color: var(--ink); font-weight: 600; }
 /* Absensi per siswa */
 .absen-aksi { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 14px 0 6px; }
@@ -425,6 +445,8 @@ th.k-Alpa  { color: var(--red); }
 <div id="login">
   <div class="login-wrap">
     <div class="loginbox">
+      <button type="button" id="loginTemaToggle" class="login-tema-toggle"
+        onclick="toggleTemaLogin()" title="Ganti mode terang/gelap"></button>
       <h1>Jurnal Mengajar</h1>
       <p class="sub">Masuk dengan email dan kata sandi yang diberikan admin.</p>
       <label for="lEmail">Email</label>
@@ -436,8 +458,8 @@ th.k-Alpa  { color: var(--red); }
       </div>
       <button class="btn" style="width:100%" onclick="masuk()">Masuk</button>
       <div id="loginMsg"></div>
+      <div class="app-footer" id="loginFooter"></div>
     </div>
-    <div class="app-footer" id="loginFooter"></div>
   </div>
 </div>
 
@@ -521,10 +543,32 @@ function terapkanTema(){
 }
 /* Terapkan segera saat file dimuat, sebelum login sekalipun */
 terapkanTema();
+
+/* Perbarui ikon tombol tema di login sesuai keadaan sekarang.
+   Menampilkan tujuan aksi: bila sekarang gelap, ikon matahari (menuju terang). */
+function perbaruiIkonTemaLogin(){
+  const btn = document.getElementById("loginTemaToggle");
+  if (!btn) return;
+  const gelap = document.documentElement.getAttribute("data-dark") === "1";
+  btn.textContent = gelap ? "\u2600\uFE0F" : "\uD83C\uDF19";  // ☀️ / 🌙
+  btn.setAttribute("aria-label", gelap ? "Beralih ke mode terang" : "Beralih ke mode gelap");
+}
+
+/* Toggle terang <-> gelap dari halaman login, lalu simpan pilihannya. */
+window.toggleTemaLogin = () => {
+  const gelapSekarang = document.documentElement.getAttribute("data-dark") === "1";
+  simpanTema(gelapSekarang ? "light" : "dark");
+  terapkanTema();
+  perbaruiIkonTemaLogin();
+};
+
+/* Set ikon awal saat halaman dimuat */
+perbaruiIkonTemaLogin();
+
 /* Bila pilihan "system", ikuti perubahan tema perangkat secara langsung */
 if (window.matchMedia) {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (bacaTema() === "system") terapkanTema();
+    if (bacaTema() === "system") { terapkanTema(); perbaruiIkonTemaLogin(); }
   });
 }
 
@@ -555,17 +599,21 @@ function tekstFooter(info){
 async function isiFooter(elId){
   const el = $(elId);
   if (!el) return;
-  // Tampilkan segera dengan info yang ada (default bila belum termuat),
-  // supaya footer tidak pernah kosong meski Firestore lambat/gagal.
-  const infoAwal = _infoApp || { versi: "1.0", pembuat: "Administrator Sekolah", namaSekolah: "" };
-  el.innerHTML = tekstFooter(infoAwal);
-  // Lalu coba muat data terbaru; kalau berhasil, perbarui.
+  // Bila info sudah pernah dimuat, langsung pakai (tanpa kedip).
+  if (_infoApp) { el.innerHTML = tekstFooter(_infoApp); return; }
+  // Belum ada data: biarkan kosong dulu, jangan tampilkan default,
+  // supaya tidak muncul "1.0" sekejap sebelum data asli termuat.
+  el.innerHTML = "";
   try {
     const info = await ambilInfoApp();
     el.innerHTML = tekstFooter(info);
-  } catch (e) { /* biarkan tampilan default */ }
+  } catch (e) {
+    // Hanya bila gagal total, tampilkan default sebagai cadangan.
+    el.innerHTML = tekstFooter({ versi: "1.0", pembuat: "Administrator Sekolah", namaSekolah: "" });
+  }
 }
 /* Isi footer login segera saat halaman dimuat */
+window.addEventListener("DOMContentLoaded", () => isiFooter("loginFooter"));
 isiFooter("loginFooter");
 
 const MENU = {
@@ -1869,10 +1917,21 @@ async function muatIsiJurnal(){
         'Pilih kelas dulu untuk menampilkan daftar absensi siswa.</p></div>' +
       // ---- Dokumentasi foto ----
       '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--line)">' +
-        '<label>Dokumentasi Kegiatan (foto, opsional)</label>' +
-        '<p class="info-kolom">Bisa langsung dari kamera HP atau pilih dari galeri. ' +
+        '<label>Dokumentasi Kegiatan (foto, wajib)</label>' +
+        '<p class="info-kolom">Wajib mengunggah foto: ambil langsung dari kamera atau pilih dari galeri. ' +
           'Foto besar otomatis dikompres untuk menghemat ruang.</p>' +
-        '<input type="file" id="jFoto" accept="image/*" onchange="pilihFotoJurnal(event)">' +
+        '<div class="foto-sumber">' +
+          '<button type="button" class="btn btn-ghost" style="margin-top:0" ' +
+            'onclick="document.getElementById(\'jFotoKamera\').click()">\uD83D\uDCF7 Ambil dari Kamera</button>' +
+          '<button type="button" class="btn btn-ghost" style="margin-top:0" ' +
+            'onclick="document.getElementById(\'jFotoGaleri\').click()">\uD83D\uDDBC Pilih dari Galeri</button>' +
+        '</div>' +
+        // input kamera: capture memaksa buka kamera
+        '<input type="file" id="jFotoKamera" accept="image/*" capture="environment" ' +
+          'onchange="pilihFotoJurnal(event)" style="display:none">' +
+        // input galeri: tanpa capture, buka galeri/file
+        '<input type="file" id="jFotoGaleri" accept="image/*" ' +
+          'onchange="pilihFotoJurnal(event)" style="display:none">' +
         '<div id="jFotoPreview"></div>' +
       '</div>' +
       '<button class="btn" id="jBtnSimpan" onclick="simpanJurnal()">Simpan Jurnal</button>' +
@@ -1903,7 +1962,8 @@ window.pilihFotoJurnal = async (ev) => {
 };
 window.hapusFotoJurnal = () => {
   _fotoDataUrl = "";
-  if ($("jFoto")) $("jFoto").value = "";
+  if ($("jFotoKamera")) $("jFotoKamera").value = "";
+  if ($("jFotoGaleri")) $("jFotoGaleri").value = "";
   if ($("jFotoPreview")) $("jFotoPreview").innerHTML = "";
 };
 
@@ -1988,6 +2048,7 @@ window.simpanJurnal = async () => {
   if (!mapel)   return setMsg("Pilih mapel dulu.", false);
   if (!materi)  return setMsg("Materi belum diisi.", false);
   if (!_absenSiswa.length) return setMsg("Absensi siswa belum dimuat. Pilih kelas dulu.", false);
+  if (!_fotoDataUrl) return setMsg("Foto dokumentasi wajib diunggah sebelum menyimpan jurnal.", false);
 
   const r = hitungRekap();
   const kehadiran = "Hadir " + r.h + ", Sakit " + r.s + ", Izin " + r.i + ", Alpa " + r.a;
