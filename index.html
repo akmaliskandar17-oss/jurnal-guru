@@ -241,6 +241,7 @@
 
 /* ==== Login ==== */
 #login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.login-wrap { width: 100%; max-width: 380px; display: flex; flex-direction: column; }
 .loginbox { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
   padding: 32px; width: 100%; max-width: 380px; }
 .loginbox h1 { font-size: 22px; margin-bottom: 4px; }
@@ -331,6 +332,12 @@ table.tabel-nilai td.n-input { text-align: center; }
   color: var(--ink); margin: 0; transition: all .15s; }
 .tema-btn:hover { border-color: var(--primary); }
 .tema-btn.aktif { border-color: var(--primary); background: var(--primary); color: #fff; }
+/* Daftar checkbox mapel (multi-pilih untuk guru) */
+.mapel-cek-list { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; }
+.cek-mapel { display: flex; align-items: center; gap: 8px; margin: 0; cursor: pointer;
+  font-size: 14px; font-weight: normal; }
+.cek-mapel input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); margin: 0; }
 /* Footer info aplikasi */
 .app-footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6;
   padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px; }
@@ -403,20 +410,22 @@ th.k-Alpa  { color: var(--red); }
 
 <!-- ============ LOGIN ============ -->
 <div id="login">
-  <div class="loginbox">
-    <h1>Jurnal Mengajar</h1>
-    <p class="sub">Masuk dengan email dan kata sandi yang diberikan admin.</p>
-    <label for="lEmail">Email</label>
-    <input id="lEmail" type="email" placeholder="nama@sekolah.sch.id" autocomplete="username">
-    <label for="lPass">Kata sandi</label>
-    <div class="login-pass-row">
-      <input id="lPass" type="password" placeholder="Kata sandi" autocomplete="current-password">
-      <button type="button" id="btnLihatPass" onclick="lihatPass()">Lihat</button>
+  <div class="login-wrap">
+    <div class="loginbox">
+      <h1>Jurnal Mengajar</h1>
+      <p class="sub">Masuk dengan email dan kata sandi yang diberikan admin.</p>
+      <label for="lEmail">Email</label>
+      <input id="lEmail" type="email" placeholder="nama@sekolah.sch.id" autocomplete="username">
+      <label for="lPass">Kata sandi</label>
+      <div class="login-pass-row">
+        <input id="lPass" type="password" placeholder="Kata sandi" autocomplete="current-password">
+        <button type="button" id="btnLihatPass" onclick="lihatPass()">Lihat</button>
+      </div>
+      <button class="btn" style="width:100%" onclick="masuk()">Masuk</button>
+      <div id="loginMsg"></div>
     </div>
-    <button class="btn" style="width:100%" onclick="masuk()">Masuk</button>
-    <div id="loginMsg"></div>
+    <div class="app-footer" id="loginFooter"></div>
   </div>
-  <div class="app-footer" id="loginFooter"></div>
 </div>
 
 <!-- ============ APLIKASI ============ -->
@@ -522,12 +531,12 @@ async function ambilInfoApp(paksa){
 /* Susun teks footer: [Nama Sekolah ·] vX.X · Pembuat · © tahun */
 function tekstFooter(info){
   const tahun = new Date().getFullYear();
-  let bagian = [];
-  if (info.namaSekolah) bagian.push('<b>' + esc(info.namaSekolah) + '</b>');
-  bagian.push('Versi ' + esc(info.versi));
-  bagian.push('Dibuat oleh ' + esc(info.pembuat));
-  return bagian.join(' \u00b7 ') + '<br>\u00a9 ' + tahun +
+  // Baris 1: Versi · Dibuat oleh (tanpa nama sekolah)
+  const baris1 = 'Versi ' + esc(info.versi) + ' \u00b7 Dibuat oleh ' + esc(info.pembuat);
+  // Baris 2: © tahun NamaSekolah. Hak cipta dilindungi.
+  const baris2 = '\u00a9 ' + tahun +
     (info.namaSekolah ? ' ' + esc(info.namaSekolah) : '') + '. Hak cipta dilindungi.';
+  return baris1 + '<br>' + baris2;
 }
 
 async function isiFooter(elId){
@@ -576,6 +585,29 @@ function opsiMapelHTML(mapelList, terpilih){
   return '<option value="">-- pilih mapel --</option>' +
     mapelList.map(m => '<option value="' + esc(m.namaMapel) + '"' +
       (m.namaMapel===terpilih?" selected":"") + '>' + esc(labelMapel(m)) + '</option>').join("");
+}
+
+/* Normalkan mapel guru jadi array nama mapel.
+   Menerima: array baru ["A","B"], teks tunggal lama "A", atau kosong. */
+function mapelGuruArray(mapelField){
+  if (Array.isArray(mapelField)) return mapelField.filter(Boolean);
+  if (typeof mapelField === "string" && mapelField.trim()) return [mapelField.trim()];
+  return [];
+}
+
+/* Daftar mapel yang boleh dipakai pengguna saat ini.
+   Guru: hanya mapel yang diampu (dari ME.mapel). Admin/kepsek: semua. */
+function mapelUntukSaya(semuaMapel){
+  if (ME && ME.role === "guru") {
+    const diampu = mapelGuruArray(ME.mapel);
+    if (diampu.length) {
+      const setAmpu = new Set(diampu);
+      const cocok = semuaMapel.filter(m => setAmpu.has(m.namaMapel));
+      // bila ada yang cocok, pakai itu; kalau tidak ada sama sekali, kembalikan semua
+      return cocok.length ? cocok : semuaMapel;
+    }
+  }
+  return semuaMapel;
 }
 const bisaEditMaster = () => ME && ME.role === "admin";
 /* Guru & admin boleh mengatur bobot nilai dan KKM (kepsek tidak) */
@@ -1370,8 +1402,12 @@ async function muatPengguna(){
   const opsiKelas = '<option value="">(tidak ada)</option>' +
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '">' + esc(k.namaKelas) + '</option>').join("");
   window._mapelSemua = mapelList;
-  const opsiMapel = '<option value="">(tidak ada)</option>' +
-    mapelList.map(m => '<option value="' + esc(m.namaMapel) + '">' + esc(labelMapel(m)) + '</option>').join("");
+  // Daftar checkbox mapel (multi-pilih untuk guru)
+  const checkMapel = mapelList.length
+    ? mapelList.map(m =>
+        '<label class="cek-mapel"><input type="checkbox" class="uMapelCek" value="' +
+        esc(m.namaMapel) + '"> ' + esc(labelMapel(m)) + '</label>').join("")
+    : '<span style="color:var(--muted);font-size:13px">Belum ada mapel. Tambahkan di menu Mapel.</span>';
 
   $("main").innerHTML =
     '<div class="card"><h2 id="uJudulForm">Tambah Pengguna</h2>' +
@@ -1392,8 +1428,8 @@ async function muatPengguna(){
       '</div>' +
       '<div class="row">' +
         '<div><label>NIP (opsional)</label><input id="uNip" placeholder="Nomor Induk Pegawai"></div>' +
-        '<div id="wrapMapel"><label>Mapel (untuk guru)</label>' +
-          '<select id="uMapel">' + opsiMapel + '</select></div>' +
+        '<div id="wrapMapel"><label>Mapel yang Diampu (untuk guru, bisa lebih dari satu)</label>' +
+          '<div class="mapel-cek-list">' + checkMapel + '</div></div>' +
       '</div>' +
       '<div class="row">' +
         '<div id="wrapKelas"><label>Kelas (opsional)</label>' +
@@ -1450,7 +1486,7 @@ async function renderPengguna(){
         '<td data-label="Email">' + esc(u.email || "-") + '</td>' +
         '<td data-label="Peran"><span class="badge" style="background:var(--amber-bg);color:var(--amber)">' +
           namaRole(u.role) + '</span></td>' +
-        '<td data-label="Mapel">' + esc(u.mapel || "-") + '</td>' +
+        '<td data-label="Mapel">' + esc(mapelGuruArray(u.mapel).join(", ") || "-") + '</td>' +
         '<td class="aksi-cell" data-label="Aksi">' +
           '<button class="aksi-edit" onclick="editPengguna(\'' + u.id + '\')">Edit</button>' +
           (iniSaya ? '' :
@@ -1469,7 +1505,11 @@ window.buatPengguna = async () => {
   const pass  = $("uPass").value;
   const role  = $("uRole").value;
   const nip   = $("uNip").value.trim();
-  const mapel = (role === "guru" && $("uMapel")) ? $("uMapel").value : "";
+  // kumpulkan mapel tercentang (array) untuk guru
+  let mapel = [];
+  if (role === "guru") {
+    document.querySelectorAll(".uMapelCek:checked").forEach(cb => mapel.push(cb.value));
+  }
   const kelas = (role === "guru" && $("uKelas")) ? $("uKelas").value : "";
 
   const setMsg = (t, ok) => { $("uMsg").innerHTML = '<div class="msg ' + (ok?"ok":"err") + '">' + esc(t) + '</div>'; };
@@ -1525,7 +1565,11 @@ window.editPengguna = (id) => {
   $("uRole").value  = u.role || "guru";
   $("uNip").value   = u.nip || "";
   ubahFieldPeran();
-  if ($("uMapel")) $("uMapel").value = u.mapel || "";
+  // centang mapel yang sudah diampu (dukung format lama & baru)
+  const mapelDimiliki = new Set(mapelGuruArray(u.mapel));
+  document.querySelectorAll(".uMapelCek").forEach(cb => {
+    cb.checked = mapelDimiliki.has(cb.value);
+  });
   if ($("uKelas")) $("uKelas").value = u.kelas || "";
 
   // Kunci email & sandi (tak bisa diubah dari sini)
@@ -1759,8 +1803,13 @@ async function muatIsiJurnal(){
 
   const opsiKelas = '<option value="">-- pilih kelas --</option>' +
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '">' + esc(k.namaKelas) + '</option>').join("");
-  const opsiMapel = opsiMapelHTML(mapelList, "");
-  const mapelGuru = (ME.role === "guru" && ME.mapel) ? ME.mapel : "";
+  // untuk guru, hanya tampilkan mapel yang diampu
+  window._mapelSemua = mapelList;
+  const mapelSaya = mapelUntukSaya(mapelList);
+  const opsiMapel = opsiMapelHTML(mapelSaya, "");
+  // bila guru hanya mengampu satu mapel, langsung pilih mapel itu
+  const daftarAmpu = mapelGuruArray(ME.mapel);
+  const mapelGuru = (ME.role === "guru" && daftarAmpu.length === 1) ? daftarAmpu[0] : "";
   const hariIni = new Date().toISOString().slice(0,10);
 
   $("main").innerHTML =
@@ -2225,7 +2274,7 @@ async function cariPengguna_(opsi){
     // role + mapel: cari guru yang mengampu mapel tertentu (spesifik, tanpa fallback)
     if (opsi.role && opsi.mapel) {
       const byRoleMapel = semua.find(u => String(u.role||"") === opsi.role &&
-        String(u.mapel||"") === String(opsi.mapel));
+        mapelGuruArray(u.mapel).includes(String(opsi.mapel)));
       return byRoleMapel || null;
     }
     if (opsi.role) {
@@ -2374,7 +2423,8 @@ async function muatNilai(){
   const opsiKelas = '<option value="">-- pilih kelas --</option>' +
     kelasList.map(k => '<option value="' + esc(k.namaKelas) + '"' +
       (k.namaKelas===_nKelas?" selected":"") + '>' + esc(k.namaKelas) + '</option>').join("");
-  const opsiMapel = opsiMapelHTML(mapelList, _nMapel);
+  window._mapelSemua = mapelList;
+  const opsiMapel = opsiMapelHTML(mapelUntukSaya(mapelList), _nMapel);
 
   const tabBtn = TAB_NILAI.map(t =>
     '<button class="' + (t.key===_nTab?"active":"") + '" onclick="gantiTabNilai(\'' + t.key + '\')">' +
