@@ -118,6 +118,8 @@
 
   main { max-width: 900px; margin: 0 auto; padding: 20px; }
 
+  main { overflow-x: hidden; }
+
   /* Cards */
   .card {
     background: var(--card); border: 1px solid var(--line);
@@ -210,10 +212,8 @@
 
   /* Footer info pembuat */
   .app-footer {
-  text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6;
-  padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px;
-  overflow-wrap: anywhere;   /* pecah teks panjang agar tak meluap */
-  word-break: break-word;
+    text-align: center; color: var(--muted); font-size: 13px;
+    padding: 20px; margin-top: 10px; border-top: 1px solid var(--line);
   }
 
   /* Modal konfirmasi custom */
@@ -350,7 +350,8 @@ table.tabel-nilai td.n-input { text-align: center; }
 .cek-mapel.tersembunyi { display: none; }
 /* Footer info aplikasi */
 .app-footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6;
-  padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px; }
+  padding: 20px 16px 28px; border-top: 1px solid var(--line); margin-top: 20px; overflow-wrap: anywhere; word-break: break-word;
+max-width: 900px; margin-left: auto; margin-right: auto; }
 #loginFooter { border-top: none; margin-top: 16px; padding: 12px 8px 0; }
 .app-footer b { color: var(--ink); font-weight: 600; }
 /* Absensi per siswa */
@@ -847,7 +848,7 @@ async function renderKelas(){
     _kelasCache = await ambilSemua("kelas", "namaKelas");
     const bolehEdit = bisaEditMaster();
     if (!_kelasCache.length) { $("kelasList").innerHTML = '<div class="empty">Belum ada kelas.</div>'; return; }
-    let html = '<table><tr><th>Nama Kelas</th><th>Wali Kelas</th>' +
+    let html = '<div class="tabel-scroll"><table><tr><th>Nama Kelas</th><th>Wali Kelas</th>' +
       (bolehEdit ? '<th class="aksi-cell">Aksi</th>' : '') + '</tr>';
     _kelasCache.forEach(k => {
       const nmAman = esc(k.namaKelas).replace(/'/g,"");
@@ -857,7 +858,7 @@ async function renderKelas(){
           '<button class="aksi-hapus" onclick="hapusKelas(\'' + k.id + '\',\'' + nmAman + '\')">Hapus</button>' +
           '</td>' : '') + '</tr>';
     });
-    $("kelasList").innerHTML = html + '</table>';
+    $("kelasList").innerHTML = html + '</table></div>';
   } catch (e) { $("kelasList").innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; }
 }
 
@@ -946,7 +947,7 @@ async function renderMapel(){
     _mapelCache = await ambilSemua("mapel", "namaMapel");
     const bolehEdit = bisaEditMaster();
     if (!_mapelCache.length) { $("mapelList").innerHTML = '<div class="empty">Belum ada mapel.</div>'; return; }
-    let html = '<table><tr><th>Nama Mapel</th><th>Kode Mapel</th>' +
+    let html = '<div class="tabel-scroll"><table><tr><th>Nama Mapel</th><th>Kode Mapel</th>' +
       (bolehEdit ? '<th class="aksi-cell">Aksi</th>' : '') + '</tr>';
     _mapelCache.forEach(m => {
       const nmAman = esc(m.namaMapel).replace(/'/g,"");
@@ -956,7 +957,7 @@ async function renderMapel(){
           '<button class="aksi-hapus" onclick="hapusMapel(\'' + m.id + '\',\'' + nmAman + '\')">Hapus</button>' +
           '</td>' : '') + '</tr>';
     });
-    $("mapelList").innerHTML = html + '</table>';
+    $("mapelList").innerHTML = html + '</table></div>';
   } catch (e) { $("mapelList").innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>'; }
 }
 
@@ -1509,7 +1510,7 @@ async function renderPengguna(){
     // urutkan berdasar nama di sisi klien
     _penggunaCache.sort((a,b) => String(a.nama||"").localeCompare(String(b.nama||"")));
     if (!_penggunaCache.length) { $("penggunaList").innerHTML = '<div class="empty">Belum ada pengguna.</div>'; return; }
-    let html = '<table class="tabel-responsif"><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Mapel</th>' +
+    let html = '<div class="tabel-scroll"><table class="tabel-responsif"><tr><th>Nama</th><th>Email</th><th>Peran</th><th>Mapel</th>' +
       '<th class="aksi-cell">Aksi</th></tr>';
     _penggunaCache.forEach(u => {
       const nmAman = esc(u.nama || u.email).replace(/'/g,"");
@@ -1526,7 +1527,7 @@ async function renderPengguna(){
             '<button class="aksi-hapus" onclick="hapusPengguna(\'' + u.id + '\',\'' + nmAman + '\')">Hapus</button>') +
         '</td></tr>';
     });
-    $("penggunaList").innerHTML = html + '</table>';
+    $("penggunaList").innerHTML = html + '</table></div>';
   } catch (e) {
     $("penggunaList").innerHTML = '<div class="empty">Gagal memuat: ' + esc(e.message) + '</div>';
   }
